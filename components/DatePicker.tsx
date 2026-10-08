@@ -74,13 +74,23 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const selectedDate = parseIsoDate(value);
-  const [viewMonth, setViewMonth] = useState(
-    () => startOfMonth(selectedDate ?? new Date()),
+  // prerender 시 `new Date()` 사용을 피하기 위해 선택값이 없으면 고정 월로 시작
+  const [viewMonth, setViewMonth] = useState(() =>
+    startOfMonth(selectedDate ?? new Date(2020, 0, 1)),
   );
+  const [todayIso, setTodayIso] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
   const minDate = parseIsoDate(min ?? "");
-  const todayIso = toIsoDate(new Date());
+
+  useEffect(() => {
+    setTodayIso(toIsoDate(new Date()));
+    if (!parseIsoDate(value)) {
+      setViewMonth(startOfMonth(new Date()));
+    }
+    // 클라이언트 마운트 시에만 현재 시각을 읽습니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!open) return;
