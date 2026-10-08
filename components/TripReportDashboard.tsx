@@ -7,36 +7,16 @@ import { ParticipantPickerDialog } from "@/components/ParticipantPickerDialog";
 import { ReportFormPanel } from "@/components/ReportFormPanel";
 import type { TripFormValues } from "@/components/TripFormDialog";
 import { TripListPanel } from "@/components/TripListPanel";
+import { buildDailyHours } from "@/lib/daily-hours";
+import { buildDailyMeals } from "@/lib/daily-meals";
 import {
   DUMMY_PEOPLE,
   DUMMY_TEAMS,
   DUMMY_TRIPS,
 } from "@/lib/dummy-data";
-import type {
-  DailyWorkHours,
-  Person,
-  ReportForm,
-  Team,
-  Trip,
-} from "@/lib/types";
+import type { Person, ReportForm, Team, Trip } from "@/lib/types";
 
 type AppTab = "trips" | "directory";
-
-function buildDailyHours(startDate: string, endDate: string): DailyWorkHours[] {
-  const days: DailyWorkHours[] = [];
-  const cursor = new Date(`${startDate}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
-
-  while (cursor <= end) {
-    const year = cursor.getFullYear();
-    const month = String(cursor.getMonth() + 1).padStart(2, "0");
-    const day = String(cursor.getDate()).padStart(2, "0");
-    days.push({ date: `${year}-${month}-${day}`, hours: 0 });
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  return days;
-}
 
 export function TripReportDashboard() {
   const [appTab, setAppTab] = useState<AppTab>("trips");
@@ -139,6 +119,10 @@ export function TripReportDashboard() {
       selectedTrip.startDate,
       selectedTrip.endDate,
     );
+    const dailyMeals = buildDailyMeals(
+      selectedTrip.startDate,
+      selectedTrip.endDate,
+    );
     const stamp = Date.now();
 
     const newParticipants = selectedPeople.map((person, index) => ({
@@ -148,11 +132,11 @@ export function TripReportDashboard() {
       department: person.department,
       status: "미작성" as const,
       form: {
-        location: "",
+        region: "",
         startDate: selectedTrip.startDate,
         endDate: selectedTrip.endDate,
         dailyHours,
-        usePrivateCar: false,
+        dailyMeals,
         transportCost: 0,
         lodgingCost: 0,
       },
@@ -369,6 +353,8 @@ export function TripReportDashboard() {
           <ReportFormPanel
             participant={selectedParticipant}
             form={selectedParticipant?.form ?? null}
+            tripStartDate={selectedTrip?.startDate ?? ""}
+            tripEndDate={selectedTrip?.endDate ?? ""}
             onChange={handleFormChange}
           />
         </main>

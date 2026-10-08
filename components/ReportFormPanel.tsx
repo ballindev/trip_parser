@@ -1,15 +1,42 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { DatePicker } from "@/components/DatePicker";
+import { SelectDropdown } from "@/components/SelectDropdown";
 import { StatusBadge } from "@/components/StatusBadge";
+import { TimePicker } from "@/components/TimePicker";
+import {
+  formatTotalWorkHours,
+  formatWorkDuration,
+  formatWorkHours,
+  isInvalidWorkTimeRange,
+  rebuildDailyHours,
+  withUpdatedDayTimes,
+} from "@/lib/daily-hours";
+import {
+  formatMealSummary,
+  rebuildDailyMeals,
+} from "@/lib/daily-meals";
 import { formatCurrency, formatDateRange, formatDisplayDate } from "@/lib/format";
-import type { Participant, ReportForm } from "@/lib/types";
+import { REGIONS } from "@/lib/regions";
+import type { DailyMeal, Participant, ReportForm } from "@/lib/types";
+
+const MEAL_OPTIONS: {
+  key: keyof Pick<DailyMeal, "breakfast" | "lunch" | "dinner">;
+  label: string;
+}[] = [
+  { key: "breakfast", label: "조식" },
+  { key: "lunch", label: "중식" },
+  { key: "dinner", label: "석식" },
+];
 
 type FormAlign = "left" | "center";
 
 type ReportFormPanelProps = {
   participant: Participant | null;
   form: ReportForm | null;
+  tripStartDate?: string;
+  tripEndDate?: string;
   onChange: (next: ReportForm) => void;
 };
 
@@ -23,12 +50,18 @@ function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-[#E5E8EB] bg-white p-5">
-      <div className="mb-4">
-        <h3 className="text-[15px] font-bold text-[#191F28]">{title}</h3>
-        <p className="mt-1 text-[13px] text-[#8B95A1]">{description}</p>
+    <section className="grid grid-cols-1 gap-4 border-b border-[#E5E8EB] py-5 last:border-b-0 md:grid-cols-[188px_minmax(0,1fr)] md:gap-0">
+      <div className="md:pr-5">
+        <h3 className="text-[15px] font-bold leading-6 text-[#191F28]">
+          {title}
+        </h3>
+        <p className="mt-1.5 text-[12px] leading-5 text-[#8B95A1]">
+          {description}
+        </p>
       </div>
-      {children}
+      <div className="min-w-0 md:border-l md:border-[#E5E8EB] md:pl-5">
+        {children}
+      </div>
     </section>
   );
 }
@@ -64,9 +97,30 @@ const inputClassName =
 export function ReportFormPanel({
   participant,
   form,
+  tripStartDate = "",
+  tripEndDate = "",
   onChange,
 }: ReportFormPanelProps) {
   const [formAlign, setFormAlign] = useState<FormAlign>("left");
+
+  useEffect(() => {
+    if (!participant || !form || !tripStartDate || !tripEndDate) return;
+    if (form.startDate && form.endDate) return;
+
+    const startDate = form.startDate || tripStartDate;
+    const endDate = form.endDate || tripEndDate;
+    const resolvedEnd = endDate < startDate ? startDate : endDate;
+
+    onChange({
+      ...form,
+      startDate,
+      endDate: resolvedEnd,
+      dailyHours: rebuildDailyHours(startDate, resolvedEnd, form.dailyHours),
+      dailyMeals: rebuildDailyMeals(startDate, resolvedEnd, form.dailyMeals),
+    });
+    // 일정 미입력 시에만 출장 목록 날짜로 채웁니다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participant?.id, tripStartDate, tripEndDate, form?.startDate, form?.endDate]);
 
   if (!participant || !form) {
     return (
@@ -83,7 +137,7 @@ export function ReportFormPanel({
     );
   }
 
-  const totalHours = form.dailyHours.reduce((sum, item) => sum + item.hours, 0);
+  const totalWorkHoursLabel = formatTotalWorkHours(form.dailyHours);
   const totalCost = form.transportCost + form.lodgingCost;
 
   return (
@@ -91,7 +145,7 @@ export function ReportFormPanel({
       <header className="flex items-center justify-between border-b border-[#E5E8EB] bg-white px-6 py-4">
         <div>
           <p className="text-[13px] font-semibold text-[#8B95A1]">
-            출장복명서 상세
+            출장비 데이터 입력폼
           </p>
           <div className="mt-1 flex items-center gap-3">
             <h2 className="text-xl font-bold tracking-tight text-[#191F28]">
@@ -144,119 +198,247 @@ export function ReportFormPanel({
 
       <div className="flex-1 overflow-y-auto p-6">
         <div
-          className={`flex w-full max-w-[1080px] items-start gap-6 ${
+          className={`flex w-full max-w-[1180px] items-start gap-6 ${
             formAlign === "center" ? "mx-auto" : "mr-auto"
           }`}
         >
-          <div className="w-full max-w-[720px] flex-1 space-y-4">
+          <div className="min-w-0 flex-1 rounded-2xl border border-[#E5E8EB] bg-white px-5">
             <FormSection
-              title="1. 장소 선택"
-              description="출장 장소를 선택하거나 입력합니다. (추후 상세 스펙 반영)"
+              title="1. 지역 선택"
+              description="출장 지역(광역자치단체)을 선택합니다."
             >
-              <FieldLabel>장소</FieldLabel>
-              <input
-                className={inputClassName}
-                value={form.location}
-                placeholder="예: 부산 신항 물류센터"
-                onChange={(e) =>
-                  onChange({ ...form, location: e.target.value })
+              <SelectDropdown
+                label="지역"
+                value={form.region}
+                options={REGIONS}
+                placeholder="지역을 선택해 주세요"
+                className="max-w-[220px]"
+                onChange={(nextRegion) =>
+                  onChange({ ...form, region: nextRegion })
                 }
               />
             </FormSection>
 
             <FormSection
               title="2. 출장 일정"
-              description="출장 시작일과 종료일을 입력합니다."
+              description="출장 목록의 일정이 기본으로 채워지며, 필요하면 수정할 수 있습니다."
             >
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>시작일</FieldLabel>
-                  <input
-                    type="date"
-                    className={inputClassName}
-                    value={form.startDate}
-                    onChange={(e) =>
-                      onChange({ ...form, startDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <FieldLabel>종료일</FieldLabel>
-                  <input
-                    type="date"
-                    className={inputClassName}
-                    value={form.endDate}
-                    onChange={(e) =>
-                      onChange({ ...form, endDate: e.target.value })
-                    }
-                  />
-                </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <DatePicker
+                  label="시작일"
+                  value={form.startDate}
+                  placeholder="시작일 선택"
+                  className="w-[168px]"
+                  onChange={(nextDate) => {
+                    const endDate =
+                      form.endDate && form.endDate >= nextDate
+                        ? form.endDate
+                        : nextDate;
+                    onChange({
+                      ...form,
+                      startDate: nextDate,
+                      endDate,
+                      dailyHours: rebuildDailyHours(
+                        nextDate,
+                        endDate,
+                        form.dailyHours,
+                      ),
+                      dailyMeals: rebuildDailyMeals(
+                        nextDate,
+                        endDate,
+                        form.dailyMeals,
+                      ),
+                    });
+                  }}
+                />
+                <DatePicker
+                  label="종료일"
+                  value={form.endDate}
+                  min={form.startDate}
+                  placeholder="종료일 선택"
+                  className="w-[168px]"
+                  onChange={(nextDate) => {
+                    const startDate = form.startDate || nextDate;
+                    const endDate =
+                      nextDate < startDate ? startDate : nextDate;
+                    onChange({
+                      ...form,
+                      startDate,
+                      endDate,
+                      dailyHours: rebuildDailyHours(
+                        startDate,
+                        endDate,
+                        form.dailyHours,
+                      ),
+                      dailyMeals: rebuildDailyMeals(
+                        startDate,
+                        endDate,
+                        form.dailyMeals,
+                      ),
+                    });
+                  }}
+                />
               </div>
             </FormSection>
 
             <FormSection
               title="3. 날짜별 근무시간"
-              description="일자별 근무시간을 입력합니다. (추후 상세 스펙 반영)"
+              description="출장 일정의 날짜별로 업무시작·마감을 선택하면 근무시간이 자동 계산됩니다."
             >
-              <div className="space-y-2">
-                {form.dailyHours.map((item, index) => (
-                  <div
-                    key={item.date}
-                    className="grid grid-cols-[minmax(0,1fr)_112px] items-center gap-3"
-                  >
-                    <div className="rounded-xl bg-[#F2F4F6] px-3.5 py-2.5 text-[14px] font-medium text-[#4E5968]">
-                      {formatDisplayDate(item.date)}
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min={0}
-                        max={24}
-                        className={`${inputClassName} pr-10`}
-                        value={item.hours}
-                        onChange={(e) => {
-                          const nextHours = [...form.dailyHours];
-                          nextHours[index] = {
-                            ...item,
-                            hours: Number(e.target.value),
-                          };
-                          onChange({ ...form, dailyHours: nextHours });
-                        }}
-                      />
-                      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13px] text-[#8B95A1]">
-                        시간
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {form.dailyHours.length === 0 ? (
+                <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
+                  <p className="text-[14px] font-semibold text-[#4E5968]">
+                    표시할 날짜가 없습니다
+                  </p>
+                  <p className="mt-1 text-[12px] text-[#8B95A1]">
+                    먼저 출장 일정의 시작일·종료일을 선택해 주세요
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {form.dailyHours.map((item, index) => {
+                    const invalidRange = isInvalidWorkTimeRange(
+                      item.startTime,
+                      item.endTime,
+                    );
+
+                    return (
+                      <div
+                        key={item.date}
+                        className="grid items-start gap-3 rounded-2xl bg-[#F9FAFB] p-3 sm:grid-cols-[112px_minmax(0,1fr)_minmax(0,1fr)_108px]"
+                      >
+                        <div>
+                          <p className="mb-1.5 text-center text-[12px] font-semibold text-[#8B95A1]">
+                            날짜
+                          </p>
+                          <div
+                            aria-readonly="true"
+                            title="출장 일정에서 자동으로 채워진 날짜입니다"
+                            className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#6B7684]"
+                          >
+                            {formatDisplayDate(item.date)}
+                          </div>
+                        </div>
+                        <TimePicker
+                          label="업무시작"
+                          value={item.startTime}
+                          placeholder="시작"
+                          onChange={(startTime) => {
+                            const nextHours = [...form.dailyHours];
+                            nextHours[index] = withUpdatedDayTimes(item, {
+                              startTime,
+                            });
+                            onChange({ ...form, dailyHours: nextHours });
+                          }}
+                        />
+                        <TimePicker
+                          label="업무마감"
+                          value={item.endTime}
+                          placeholder="마감"
+                          onChange={(endTime) => {
+                            const nextHours = [...form.dailyHours];
+                            nextHours[index] = withUpdatedDayTimes(item, {
+                              endTime,
+                            });
+                            onChange({ ...form, dailyHours: nextHours });
+                          }}
+                        />
+                        <div>
+                          <p className="mb-1.5 text-center text-[12px] font-semibold text-[#8B95A1]">
+                            업무시간
+                          </p>
+                          <div
+                            className={`flex h-11 items-center justify-center rounded-xl px-2 ${
+                              invalidRange ? "bg-[#FFF5F6]" : "bg-[#F2F8FF]"
+                            }`}
+                          >
+                            {invalidRange ? (
+                              <p className="text-center text-[12px] font-bold leading-4 text-[#F04452]">
+                                시간 수정
+                                <br />
+                                필요
+                              </p>
+                            ) : (
+                              <p className="text-center text-[14px] font-bold tabular-nums text-[#3182F6]">
+                                {item.startTime && item.endTime
+                                  ? formatWorkDuration(
+                                      item.startTime,
+                                      item.endTime,
+                                    )
+                                  : formatWorkHours(item.hours)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </FormSection>
 
             <FormSection
-              title="4. 사추비 사용여부"
-              description="자가용 이용(사추비) 여부를 선택합니다."
+              title="4. 사업추진비 사용여부"
+              description="출장 일정 날짜별로 조식·중식·석식 사용 여부를 선택합니다."
             >
-              <div className="flex gap-2">
-                {[true, false].map((value) => {
-                  const selected = form.usePrivateCar === value;
-                  return (
-                    <button
-                      key={String(value)}
-                      type="button"
-                      onClick={() =>
-                        onChange({ ...form, usePrivateCar: value })
-                      }
-                      className={`min-w-[96px] rounded-xl px-4 py-2.5 text-[14px] font-semibold transition-all ${
-                        selected
-                          ? "bg-[#3182F6] text-white"
-                          : "bg-[#F2F4F6] text-[#4E5968] hover:bg-[#E5E8EB]"
-                      }`}
+              {form.dailyMeals.length === 0 ? (
+                <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
+                  <p className="text-[14px] font-semibold text-[#4E5968]">
+                    표시할 날짜가 없습니다
+                  </p>
+                  <p className="mt-1 text-[12px] text-[#8B95A1]">
+                    먼저 출장 일정의 시작일·종료일을 선택해 주세요
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {form.dailyMeals.map((item, index) => (
+                    <div
+                      key={item.date}
+                      className="grid items-center gap-3 rounded-2xl bg-[#F9FAFB] p-3 sm:grid-cols-[112px_minmax(0,1fr)]"
                     >
-                      {value ? "사용" : "미사용"}
-                    </button>
-                  );
-                })}
-              </div>
+                      <div
+                        aria-readonly="true"
+                        title="출장 일정에서 자동으로 채워진 날짜입니다"
+                        className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#6B7684]"
+                      >
+                        {formatDisplayDate(item.date)}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-5 px-1">
+                        {MEAL_OPTIONS.map((option) => {
+                          const checked = item[option.key];
+                          return (
+                            <label
+                              key={option.key}
+                              className="flex h-11 cursor-pointer items-center gap-2"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const nextMeals = [...form.dailyMeals];
+                                  nextMeals[index] = {
+                                    ...item,
+                                    [option.key]: !checked,
+                                  };
+                                  onChange({
+                                    ...form,
+                                    dailyMeals: nextMeals,
+                                  });
+                                }}
+                                className="h-4 w-4 accent-[#3182F6]"
+                              />
+                              <span className="text-[14px] font-semibold text-[#4E5968]">
+                                {option.label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </FormSection>
 
             <FormSection
@@ -304,7 +486,7 @@ export function ReportFormPanel({
             </FormSection>
           </div>
 
-          <aside className="sticky top-0 hidden w-[280px] shrink-0 xl:block">
+          <aside className="sticky top-0 hidden w-[260px] shrink-0 xl:block">
             <div className="rounded-2xl border border-[#E5E8EB] bg-white p-5">
               <p className="text-[13px] font-semibold text-[#8B95A1]">
                 입력 요약
@@ -319,8 +501,8 @@ export function ReportFormPanel({
                   value={participant.status}
                 />
                 <SummaryRow
-                  label="장소"
-                  value={form.location || "미입력"}
+                  label="지역"
+                  value={form.region || "미입력"}
                 />
                 <SummaryRow
                   label="일정"
@@ -330,10 +512,13 @@ export function ReportFormPanel({
                       : "미입력"
                   }
                 />
-                <SummaryRow label="총 근무시간" value={`${totalHours}시간`} />
                 <SummaryRow
-                  label="사추비"
-                  value={form.usePrivateCar ? "사용" : "미사용"}
+                  label="총 근무시간"
+                  value={totalWorkHoursLabel}
+                />
+                <SummaryRow
+                  label="사업추진비"
+                  value={formatMealSummary(form.dailyMeals)}
                 />
                 <SummaryRow
                   label="교통비"

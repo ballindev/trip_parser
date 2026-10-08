@@ -2,15 +2,27 @@ export type WriteStatus = "미작성" | "작성중" | "완료";
 
 export type DailyWorkHours = {
   date: string;
+  /** `HH:mm` */
+  startTime: string;
+  /** `HH:mm` */
+  endTime: string;
+  /** startTime~endTime으로 계산된 근무시간(시간) */
   hours: number;
 };
 
+export type DailyMeal = {
+  date: string;
+  breakfast: boolean;
+  lunch: boolean;
+  dinner: boolean;
+};
+
 export type ReportForm = {
-  location: string;
+  region: string;
   startDate: string;
   endDate: string;
   dailyHours: DailyWorkHours[];
-  usePrivateCar: boolean;
+  dailyMeals: DailyMeal[];
   transportCost: number;
   lodgingCost: number;
 };

@@ -1,4 +1,22 @@
-import type { Person, Team, Trip } from "./types";
+import { calcWorkHours } from "./daily-hours";
+import type { DailyWorkHours, Person, Team, Trip } from "./types";
+
+function workDay(
+  date: string,
+  startTime: string,
+  endTime: string,
+): DailyWorkHours {
+  return {
+    date,
+    startTime,
+    endTime,
+    hours: calcWorkHours(startTime, endTime),
+  };
+}
+
+function emptyWorkDay(date: string): DailyWorkHours {
+  return { date, startTime: "", endTime: "", hours: 0 };
+}
 
 export const DUMMY_PEOPLE: Person[] = [
   { id: "person-1", name: "김민수", department: "물류기획팀" },
@@ -48,15 +66,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "물류기획팀",
         status: "완료",
         form: {
-          location: "부산 신항 물류센터",
+          region: "부산광역시",
           startDate: "2026-03-10",
           endDate: "2026-03-12",
           dailyHours: [
-            { date: "2026-03-10", hours: 8 },
-            { date: "2026-03-11", hours: 8 },
-            { date: "2026-03-12", hours: 4 },
+            workDay("2026-03-10", "09:00", "17:00"),
+            workDay("2026-03-11", "09:00", "17:00"),
+            workDay("2026-03-12", "09:00", "13:00"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-03-10", breakfast: true, lunch: true, dinner: true },
+            { date: "2026-03-11", breakfast: true, lunch: true, dinner: true },
+            { date: "2026-03-12", breakfast: true, lunch: true, dinner: false },
+          ],
           transportCost: 128000,
           lodgingCost: 180000,
         },
@@ -68,15 +90,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "설비운영팀",
         status: "작성중",
         form: {
-          location: "부산 신항 물류센터",
+          region: "부산광역시",
           startDate: "2026-03-10",
           endDate: "2026-03-12",
           dailyHours: [
-            { date: "2026-03-10", hours: 8 },
-            { date: "2026-03-11", hours: 7 },
-            { date: "2026-03-12", hours: 0 },
+            workDay("2026-03-10", "09:00", "17:00"),
+            workDay("2026-03-11", "09:00", "16:00"),
+            emptyWorkDay("2026-03-12"),
           ],
-          usePrivateCar: true,
+          dailyMeals: [
+            { date: "2026-03-10", breakfast: false, lunch: true, dinner: true },
+            { date: "2026-03-11", breakfast: true, lunch: true, dinner: false },
+            { date: "2026-03-12", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 45000,
           lodgingCost: 90000,
         },
@@ -88,15 +114,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "안전관리팀",
         status: "미작성",
         form: {
-          location: "",
+          region: "",
           startDate: "2026-03-10",
           endDate: "2026-03-12",
           dailyHours: [
-            { date: "2026-03-10", hours: 0 },
-            { date: "2026-03-11", hours: 0 },
-            { date: "2026-03-12", hours: 0 },
+            emptyWorkDay("2026-03-10"),
+            emptyWorkDay("2026-03-11"),
+            emptyWorkDay("2026-03-12"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-03-10", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-03-11", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-03-12", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 0,
           lodgingCost: 0,
         },
@@ -116,14 +146,17 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "프로덕트팀",
         status: "작성중",
         form: {
-          location: "대전 테크노파크",
+          region: "대전광역시",
           startDate: "2026-03-18",
           endDate: "2026-03-19",
           dailyHours: [
-            { date: "2026-03-18", hours: 9 },
-            { date: "2026-03-19", hours: 6 },
+            workDay("2026-03-18", "09:00", "18:00"),
+            workDay("2026-03-19", "09:00", "15:00"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-03-18", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-03-19", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 62000,
           lodgingCost: 110000,
         },
@@ -134,14 +167,17 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "엔지니어링팀",
         status: "미작성",
         form: {
-          location: "",
+          region: "",
           startDate: "2026-03-18",
           endDate: "2026-03-19",
           dailyHours: [
-            { date: "2026-03-18", hours: 0 },
-            { date: "2026-03-19", hours: 0 },
+            emptyWorkDay("2026-03-18"),
+            emptyWorkDay("2026-03-19"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-03-18", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-03-19", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 0,
           lodgingCost: 0,
         },
@@ -161,15 +197,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "교육운영팀",
         status: "완료",
         form: {
-          location: "제주 연수원",
+          region: "제주특별자치도",
           startDate: "2026-04-02",
           endDate: "2026-04-04",
           dailyHours: [
-            { date: "2026-04-02", hours: 8 },
-            { date: "2026-04-03", hours: 8 },
-            { date: "2026-04-04", hours: 5 },
+            workDay("2026-04-02", "09:00", "17:00"),
+            workDay("2026-04-03", "09:00", "17:00"),
+            workDay("2026-04-04", "09:00", "14:00"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-04-02", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-03", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-04", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 210000,
           lodgingCost: 240000,
         },
@@ -180,15 +220,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "인사팀",
         status: "작성중",
         form: {
-          location: "제주 연수원",
+          region: "제주특별자치도",
           startDate: "2026-04-02",
           endDate: "2026-04-04",
           dailyHours: [
-            { date: "2026-04-02", hours: 8 },
-            { date: "2026-04-03", hours: 8 },
-            { date: "2026-04-04", hours: 0 },
+            workDay("2026-04-02", "09:00", "17:00"),
+            workDay("2026-04-03", "09:00", "17:00"),
+            emptyWorkDay("2026-04-04"),
           ],
-          usePrivateCar: true,
+          dailyMeals: [
+            { date: "2026-04-02", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-03", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-04", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 0,
           lodgingCost: 240000,
         },
@@ -199,15 +243,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "영업지원팀",
         status: "미작성",
         form: {
-          location: "",
+          region: "",
           startDate: "2026-04-02",
           endDate: "2026-04-04",
           dailyHours: [
-            { date: "2026-04-02", hours: 0 },
-            { date: "2026-04-03", hours: 0 },
-            { date: "2026-04-04", hours: 0 },
+            emptyWorkDay("2026-04-02"),
+            emptyWorkDay("2026-04-03"),
+            emptyWorkDay("2026-04-04"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-04-02", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-03", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-04", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 0,
           lodgingCost: 0,
         },
@@ -218,15 +266,19 @@ export const DUMMY_TRIPS: Trip[] = [
         department: "고객경험팀",
         status: "미작성",
         form: {
-          location: "",
+          region: "",
           startDate: "2026-04-02",
           endDate: "2026-04-04",
           dailyHours: [
-            { date: "2026-04-02", hours: 0 },
-            { date: "2026-04-03", hours: 0 },
-            { date: "2026-04-04", hours: 0 },
+            emptyWorkDay("2026-04-02"),
+            emptyWorkDay("2026-04-03"),
+            emptyWorkDay("2026-04-04"),
           ],
-          usePrivateCar: false,
+          dailyMeals: [
+            { date: "2026-04-02", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-03", breakfast: false, lunch: false, dinner: false },
+            { date: "2026-04-04", breakfast: false, lunch: false, dinner: false },
+          ],
           transportCost: 0,
           lodgingCost: 0,
         },

@@ -67,6 +67,8 @@ export function DirectoryManageView({
 }: DirectoryManageViewProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | "all">("all");
   const [selectedPersonId, setSelectedPersonId] = useState("");
+  const [personDeleteMode, setPersonDeleteMode] = useState(false);
+  const [checkedPersonIds, setCheckedPersonIds] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
   const [personDraft, setPersonDraft] = useState<{
@@ -81,7 +83,7 @@ export function DirectoryManageView({
     memberIds: string[];
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<
-    | { type: "person"; id: string; name: string }
+    | { type: "people"; ids: string[]; names: string[] }
     | { type: "team"; id: string; name: string }
     | null
   >(null);
@@ -90,9 +92,6 @@ export function DirectoryManageView({
     selectedTeamId === "all"
       ? null
       : (teams.find((team) => team.id === selectedTeamId) ?? null);
-
-  const selectedPerson =
-    people.find((person) => person.id === selectedPersonId) ?? null;
 
   const filteredTeams = useMemo(() => {
     const query = teamSearch.trim().toLowerCase();
@@ -130,19 +129,44 @@ export function DirectoryManageView({
     return map;
   }, [teams]);
 
+  const exitPersonDeleteMode = () => {
+    setPersonDeleteMode(false);
+    setCheckedPersonIds([]);
+  };
+
   const openCreatePerson = () => {
+    if (personDeleteMode) exitPersonDeleteMode();
     const defaultTeamId = selectedTeamId !== "all" ? selectedTeamId : "";
     setPersonError("");
     setPersonDraft({ name: "", teamId: defaultTeamId });
   };
 
   const openEditPerson = (person: Person) => {
+    if (personDeleteMode) exitPersonDeleteMode();
     setPersonError("");
     setPersonDraft({
       id: person.id,
       name: person.name,
       teamId: resolvePersonTeamId(person.id, teams),
     });
+  };
+
+  const toggleCheckedPerson = (personId: string) => {
+    setCheckedPersonIds((current) =>
+      current.includes(personId)
+        ? current.filter((id) => id !== personId)
+        : [...current, personId],
+    );
+  };
+
+  const requestDeletePeople = (ids: string[]) => {
+    const uniqueIds = [...new Set(ids)].filter(Boolean);
+    if (uniqueIds.length === 0) return;
+
+    const names = uniqueIds.map(
+      (id) => people.find((person) => person.id === id)?.name ?? id,
+    );
+    setDeleteTarget({ type: "people", ids: uniqueIds, names });
   };
 
   const handleSavePerson = () => {
@@ -201,13 +225,13 @@ export function DirectoryManageView({
     });
   };
 
-  const handleDeleteSelectedPerson = () => {
-    if (!selectedPerson) return;
-    setDeleteTarget({
-      type: "person",
-      id: selectedPerson.id,
-      name: selectedPerson.name,
-    });
+  const handlePersonMinusClick = () => {
+    setPersonDeleteMode(true);
+    setCheckedPersonIds(
+      selectedPersonId && visiblePeople.some((p) => p.id === selectedPersonId)
+        ? [selectedPersonId]
+        : [],
+    );
   };
 
   return (
@@ -219,7 +243,8 @@ export function DirectoryManageView({
               인원/팀 관리
             </h2>
             <p className="mt-2 text-[14px] leading-6 text-[#8B95A1]">
-              +/− 로 추가·삭제하고, 항목을 더블클릭하면 수정할 수 있습니다.
+              +/− 로 추가·삭제하고, 사람을 더블클릭하면 수정하거나 삭제할 수
+              있습니다.
             </p>
           </div>
 
@@ -323,20 +348,45 @@ export function DirectoryManageView({
                   </h3>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <IconButton
-                    label="사람 추가"
-                    variant="primary"
-                    onClick={openCreatePerson}
-                  >
-                    +
-                  </IconButton>
-                  <IconButton
-                    label="사람 삭제"
-                    disabled={!selectedPerson}
-                    onClick={handleDeleteSelectedPerson}
-                  >
-                    −
-                  </IconButton>
+                  {personDeleteMode ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => requestDeletePeople(checkedPersonIds)}
+                        disabled={checkedPersonIds.length === 0}
+                        className="rounded-xl bg-[#F04452] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#D93A47] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        삭제
+                        {checkedPersonIds.length > 0
+                          ? ` ${checkedPersonIds.length}`
+                          : ""}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={exitPersonDeleteMode}
+                        className="rounded-xl bg-[#F2F4F6] px-3 py-1.5 text-[13px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+                      >
+                        취소
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <IconButton
+                        label="사람 추가"
+                        variant="primary"
+                        onClick={openCreatePerson}
+                      >
+                        +
+                      </IconButton>
+                      <IconButton
+                        label="사람 삭제"
+                        disabled={visiblePeople.length === 0}
+                        onClick={handlePersonMinusClick}
+                      >
+                        −
+                      </IconButton>
+                    </>
+                  )}
                 </div>
               </header>
 
@@ -351,20 +401,103 @@ export function DirectoryManageView({
                   />
                   <div className="flex h-full shrink-0 items-center rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3">
                     <p className="text-[13px] font-semibold text-[#4E5968]">
-                      인원{" "}
-                      <span className="font-bold text-[#3182F6]">
-                        {visiblePeople.length}
-                      </span>
-                      명
+                      {personDeleteMode ? (
+                        <>
+                          선택{" "}
+                          <span className="font-bold text-[#F04452]">
+                            {checkedPersonIds.length}
+                          </span>
+                          명
+                        </>
+                      ) : (
+                        <>
+                          인원{" "}
+                          <span className="font-bold text-[#3182F6]">
+                            {visiblePeople.length}
+                          </span>
+                          명
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {personDeleteMode ? (
+                <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-2">
+                  <p className="text-[12px] font-medium text-[#8B95A1]">
+                    삭제할 사람을 선택하세요
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const visibleIds = visiblePeople.map((p) => p.id);
+                      const allChecked = visibleIds.every((id) =>
+                        checkedPersonIds.includes(id),
+                      );
+                      setCheckedPersonIds(
+                        allChecked
+                          ? checkedPersonIds.filter(
+                              (id) => !visibleIds.includes(id),
+                            )
+                          : [
+                              ...new Set([
+                                ...checkedPersonIds,
+                                ...visibleIds,
+                              ]),
+                            ],
+                      );
+                    }}
+                    disabled={visiblePeople.length === 0}
+                    className="text-[12px] font-bold text-[#3182F6] disabled:opacity-40"
+                  >
+                    {visiblePeople.length > 0 &&
+                    visiblePeople.every((p) =>
+                      checkedPersonIds.includes(p.id),
+                    )
+                      ? "전체 해제"
+                      : "전체 선택"}
+                  </button>
+                </div>
+              ) : null}
+
               <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
                 {visiblePeople.map((person) => {
                   const belonging = teamMembership.get(person.id) ?? [];
                   const selected = selectedPersonId === person.id;
+                  const checked = checkedPersonIds.includes(person.id);
+
+                  if (personDeleteMode) {
+                    return (
+                      <label
+                        key={person.id}
+                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+                          checked
+                            ? "border-[#F04452] bg-[#FFF5F6]"
+                            : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCheckedPerson(person.id)}
+                          className="h-4 w-4 shrink-0 accent-[#F04452]"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-bold text-[#191F28]">
+                            {person.name}
+                          </span>
+                          <span className="mt-0.5 block text-[12px] text-[#8B95A1]">
+                            {person.department}
+                            {belonging.length > 0
+                              ? ` · ${belonging.join(", ")}`
+                              : ""}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  }
+
                   return (
                     <button
                       key={person.id}
@@ -413,9 +546,23 @@ export function DirectoryManageView({
       {personDraft ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <h3 className="text-[17px] font-bold text-[#191F28]">
-              {personDraft.id ? "사람 수정" : "사람 추가"}
-            </h3>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-[17px] font-bold text-[#191F28]">
+                {personDraft.id ? "사람 수정" : "사람 추가"}
+              </h3>
+              {personDraft.id ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!personDraft.id) return;
+                    requestDeletePeople([personDraft.id]);
+                  }}
+                  className="rounded-xl bg-[#FFF5F6] px-3 py-1.5 text-[13px] font-bold text-[#F04452] transition-colors hover:bg-[#FFE5E7]"
+                >
+                  삭제
+                </button>
+              ) : null}
+            </div>
             <div className="mt-5 space-y-4">
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
@@ -580,23 +727,53 @@ export function DirectoryManageView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[360px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
             <h3 className="text-[17px] font-bold text-[#191F28]">
-              {deleteTarget.type === "person" ? "사람을" : "팀을"} 삭제할까요?
+              {deleteTarget.type === "people"
+                ? deleteTarget.ids.length > 1
+                  ? `${deleteTarget.ids.length}명을 삭제할까요?`
+                  : "사람을 삭제할까요?"
+                : "팀을 삭제할까요?"}
             </h3>
             <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
-              <span className="font-semibold text-[#191F28]">
-                {deleteTarget.name}
-              </span>
-              을(를) 삭제합니다.
+              {deleteTarget.type === "people" ? (
+                deleteTarget.ids.length === 1 ? (
+                  <>
+                    <span className="font-semibold text-[#191F28]">
+                      {deleteTarget.names[0]}
+                    </span>
+                    을(를) 삭제합니다.
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-[#191F28]">
+                      {deleteTarget.names.slice(0, 3).join(", ")}
+                      {deleteTarget.names.length > 3
+                        ? ` 외 ${deleteTarget.names.length - 3}명`
+                        : ""}
+                    </span>
+                    을(를) 삭제합니다.
+                  </>
+                )
+              ) : (
+                <>
+                  <span className="font-semibold text-[#191F28]">
+                    {deleteTarget.name}
+                  </span>
+                  을(를) 삭제합니다.
+                </>
+              )}
             </p>
             <div className="mt-6 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  if (deleteTarget.type === "person") {
-                    onDeletePerson(deleteTarget.id);
-                    if (selectedPersonId === deleteTarget.id) {
+                  if (deleteTarget.type === "people") {
+                    deleteTarget.ids.forEach((id) => onDeletePerson(id));
+                    if (deleteTarget.ids.includes(selectedPersonId)) {
                       setSelectedPersonId("");
                     }
+                    setPersonDraft(null);
+                    setPersonError("");
+                    exitPersonDeleteMode();
                   } else {
                     onDeleteTeam(deleteTarget.id);
                     if (selectedTeamId === deleteTarget.id) {

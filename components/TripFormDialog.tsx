@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatDisplayDate, parseDisplayDate } from "@/lib/format";
+import { DatePicker } from "@/components/DatePicker";
 
 export type TripFormValues = {
   name: string;
@@ -27,57 +27,6 @@ function resolveDurationMode(
   endDate: string,
 ): TripDurationMode {
   return startDate && endDate && startDate === endDate ? "sameDay" : "range";
-}
-
-function DateYmdInput({
-  label,
-  value,
-  min,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  min?: string;
-  onChange: (isoDate: string) => void;
-}) {
-  const [text, setText] = useState(formatDisplayDate(value));
-
-  useEffect(() => {
-    setText(formatDisplayDate(value));
-  }, [value]);
-
-  return (
-    <div>
-      <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
-        {label}
-      </label>
-      <input
-        type="text"
-        inputMode="numeric"
-        placeholder="YYYY.MM.DD"
-        className={inputClassName}
-        value={text}
-        onChange={(e) => {
-          const next = e.target.value;
-          setText(next);
-          const parsed = parseDisplayDate(next);
-          if (parsed) onChange(parsed);
-        }}
-        onBlur={() => {
-          const parsed = parseDisplayDate(text);
-          if (parsed) {
-            setText(formatDisplayDate(parsed));
-            onChange(parsed);
-            return;
-          }
-          setText(formatDisplayDate(value));
-        }}
-      />
-      {min ? (
-        <span className="sr-only">최소일: {formatDisplayDate(min)}</span>
-      ) : null}
-    </div>
-  );
 }
 
 export function TripFormDialog({
@@ -130,20 +79,17 @@ export function TripFormDialog({
       return;
     }
 
-    if (!startDate || !parseDisplayDate(formatDisplayDate(startDate))) {
+    if (!startDate) {
       setError(
         durationMode === "sameDay"
-          ? "출장일을 YYYY.MM.DD 형식으로 입력해 주세요."
-          : "시작일을 YYYY.MM.DD 형식으로 입력해 주세요.",
+          ? "출장일을 선택해 주세요."
+          : "시작일을 선택해 주세요.",
       );
       return;
     }
 
-    if (
-      durationMode === "range" &&
-      (!resolvedEndDate || !parseDisplayDate(formatDisplayDate(resolvedEndDate)))
-    ) {
-      setError("종료일을 YYYY.MM.DD 형식으로 입력해 주세요.");
+    if (durationMode === "range" && !resolvedEndDate) {
+      setError("종료일을 선택해 주세요.");
       return;
     }
 
@@ -241,9 +187,10 @@ export function TripFormDialog({
           </div>
 
           {durationMode === "sameDay" ? (
-            <DateYmdInput
+            <DatePicker
               label="출장일"
               value={startDate}
+              placeholder="출장일 선택"
               onChange={(nextDate) => {
                 setStartDate(nextDate);
                 setEndDate(nextDate);
@@ -252,18 +199,21 @@ export function TripFormDialog({
             />
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <DateYmdInput
+              <DatePicker
                 label="시작일"
                 value={startDate}
+                placeholder="시작일 선택"
                 onChange={(nextDate) => {
                   setStartDate(nextDate);
                   setError("");
                 }}
               />
-              <DateYmdInput
+              <DatePicker
                 label="종료일"
                 value={endDate}
                 min={startDate}
+                align="right"
+                placeholder="종료일 선택"
                 onChange={(nextDate) => {
                   setEndDate(nextDate);
                   setError("");
