@@ -1,0 +1,236 @@
+import type { Person, Team, Trip } from "./types";
+
+export const DUMMY_PEOPLE: Person[] = [
+  { id: "person-1", name: "김민수", department: "물류기획팀" },
+  { id: "person-2", name: "이서연", department: "설비운영팀" },
+  { id: "person-3", name: "박준호", department: "안전관리팀" },
+  { id: "person-4", name: "최유진", department: "프로덕트팀" },
+  { id: "person-5", name: "정하늘", department: "엔지니어링팀" },
+  { id: "person-6", name: "한지우", department: "교육운영팀" },
+  { id: "person-7", name: "오세린", department: "인사팀" },
+  { id: "person-8", name: "배성훈", department: "영업지원팀" },
+  { id: "person-9", name: "윤다은", department: "고객경험팀" },
+  { id: "person-10", name: "강도윤", department: "물류기획팀" },
+  { id: "person-11", name: "신예린", department: "설비운영팀" },
+  { id: "person-12", name: "문지호", department: "엔지니어링팀" },
+];
+
+export const DUMMY_TEAMS: Team[] = [
+  {
+    id: "team-1",
+    name: "물류 현장팀",
+    memberIds: ["person-1", "person-2", "person-3", "person-10", "person-11"],
+  },
+  {
+    id: "team-2",
+    name: "R&D 미팅팀",
+    memberIds: ["person-4", "person-5", "person-12"],
+  },
+  {
+    id: "team-3",
+    name: "교육 운영팀",
+    memberIds: ["person-6", "person-7", "person-8", "person-9"],
+  },
+];
+
+export const DUMMY_TRIPS: Trip[] = [
+  {
+    id: "trip-1",
+    name: "부산 물류센터 점검",
+    startDate: "2026-03-10",
+    endDate: "2026-03-12",
+    summary: "물류 자동화 설비 현황 점검 및 운영 이슈 협의",
+    participants: [
+      {
+        id: "p-1-1",
+        personId: "person-1",
+        name: "김민수",
+        department: "물류기획팀",
+        status: "완료",
+        form: {
+          location: "부산 신항 물류센터",
+          startDate: "2026-03-10",
+          endDate: "2026-03-12",
+          dailyHours: [
+            { date: "2026-03-10", hours: 8 },
+            { date: "2026-03-11", hours: 8 },
+            { date: "2026-03-12", hours: 4 },
+          ],
+          usePrivateCar: false,
+          transportCost: 128000,
+          lodgingCost: 180000,
+        },
+      },
+      {
+        id: "p-1-2",
+        personId: "person-2",
+        name: "이서연",
+        department: "설비운영팀",
+        status: "작성중",
+        form: {
+          location: "부산 신항 물류센터",
+          startDate: "2026-03-10",
+          endDate: "2026-03-12",
+          dailyHours: [
+            { date: "2026-03-10", hours: 8 },
+            { date: "2026-03-11", hours: 7 },
+            { date: "2026-03-12", hours: 0 },
+          ],
+          usePrivateCar: true,
+          transportCost: 45000,
+          lodgingCost: 90000,
+        },
+      },
+      {
+        id: "p-1-3",
+        personId: "person-3",
+        name: "박준호",
+        department: "안전관리팀",
+        status: "미작성",
+        form: {
+          location: "",
+          startDate: "2026-03-10",
+          endDate: "2026-03-12",
+          dailyHours: [
+            { date: "2026-03-10", hours: 0 },
+            { date: "2026-03-11", hours: 0 },
+            { date: "2026-03-12", hours: 0 },
+          ],
+          usePrivateCar: false,
+          transportCost: 0,
+          lodgingCost: 0,
+        },
+      },
+    ],
+  },
+  {
+    id: "trip-2",
+    name: "대전 R&D 미팅",
+    startDate: "2026-03-18",
+    endDate: "2026-03-19",
+    summary: "신규 서비스 기술 검토 및 파트너사 미팅",
+    participants: [
+      {
+        id: "p-2-1",
+        name: "최유진",
+        department: "프로덕트팀",
+        status: "작성중",
+        form: {
+          location: "대전 테크노파크",
+          startDate: "2026-03-18",
+          endDate: "2026-03-19",
+          dailyHours: [
+            { date: "2026-03-18", hours: 9 },
+            { date: "2026-03-19", hours: 6 },
+          ],
+          usePrivateCar: false,
+          transportCost: 62000,
+          lodgingCost: 110000,
+        },
+      },
+      {
+        id: "p-2-2",
+        name: "정하늘",
+        department: "엔지니어링팀",
+        status: "미작성",
+        form: {
+          location: "",
+          startDate: "2026-03-18",
+          endDate: "2026-03-19",
+          dailyHours: [
+            { date: "2026-03-18", hours: 0 },
+            { date: "2026-03-19", hours: 0 },
+          ],
+          usePrivateCar: false,
+          transportCost: 0,
+          lodgingCost: 0,
+        },
+      },
+    ],
+  },
+  {
+    id: "trip-3",
+    name: "제주 현장 교육",
+    startDate: "2026-04-02",
+    endDate: "2026-04-04",
+    summary: "지점 직원 대상 업무 프로세스 교육",
+    participants: [
+      {
+        id: "p-3-1",
+        name: "한지우",
+        department: "교육운영팀",
+        status: "완료",
+        form: {
+          location: "제주 연수원",
+          startDate: "2026-04-02",
+          endDate: "2026-04-04",
+          dailyHours: [
+            { date: "2026-04-02", hours: 8 },
+            { date: "2026-04-03", hours: 8 },
+            { date: "2026-04-04", hours: 5 },
+          ],
+          usePrivateCar: false,
+          transportCost: 210000,
+          lodgingCost: 240000,
+        },
+      },
+      {
+        id: "p-3-2",
+        name: "오세린",
+        department: "인사팀",
+        status: "작성중",
+        form: {
+          location: "제주 연수원",
+          startDate: "2026-04-02",
+          endDate: "2026-04-04",
+          dailyHours: [
+            { date: "2026-04-02", hours: 8 },
+            { date: "2026-04-03", hours: 8 },
+            { date: "2026-04-04", hours: 0 },
+          ],
+          usePrivateCar: true,
+          transportCost: 0,
+          lodgingCost: 240000,
+        },
+      },
+      {
+        id: "p-3-3",
+        name: "배성훈",
+        department: "영업지원팀",
+        status: "미작성",
+        form: {
+          location: "",
+          startDate: "2026-04-02",
+          endDate: "2026-04-04",
+          dailyHours: [
+            { date: "2026-04-02", hours: 0 },
+            { date: "2026-04-03", hours: 0 },
+            { date: "2026-04-04", hours: 0 },
+          ],
+          usePrivateCar: false,
+          transportCost: 0,
+          lodgingCost: 0,
+        },
+      },
+      {
+        id: "p-3-4",
+        name: "윤다은",
+        department: "고객경험팀",
+        status: "미작성",
+        form: {
+          location: "",
+          startDate: "2026-04-02",
+          endDate: "2026-04-04",
+          dailyHours: [
+            { date: "2026-04-02", hours: 0 },
+            { date: "2026-04-03", hours: 0 },
+            { date: "2026-04-04", hours: 0 },
+          ],
+          usePrivateCar: false,
+          transportCost: 0,
+          lodgingCost: 0,
+        },
+      },
+    ],
+  },
+];
