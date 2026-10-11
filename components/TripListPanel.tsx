@@ -7,6 +7,7 @@ import {
 } from "@/components/TripFormDialog";
 import { formatDateRange, participationBadge } from "@/lib/format";
 import type { Trip } from "@/lib/types";
+import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 
 function todayIsoDate() {
   const now = new Date();
@@ -23,6 +24,7 @@ type TripListPanelProps = {
   onAddTrip: (values: TripFormValues) => void;
   onUpdateTrip: (tripId: string, values: TripFormValues) => void;
   onDeleteTrip: (tripId: string) => void;
+  onOpenAttachment: () => void;
 };
 
 type FormDialogState =
@@ -37,6 +39,7 @@ export function TripListPanel({
   onAddTrip,
   onUpdateTrip,
   onDeleteTrip,
+  onOpenAttachment,
 }: TripListPanelProps) {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
@@ -73,6 +76,12 @@ export function TripListPanel({
   const handleCancelDelete = () => {
     setIsDeleteConfirmOpen(false);
   };
+
+  useDialogKeyboard({
+    enabled: isDeleteConfirmOpen && Boolean(selectedTrip) && !formDialog,
+    onConfirm: handleConfirmDelete,
+    onCancel: handleCancelDelete,
+  });
 
   const handleOpenCreate = () => {
     setFormDialog({ mode: "create" });
@@ -211,6 +220,17 @@ export function TripListPanel({
             );
           })
         )}
+      </div>
+
+      <div className="shrink-0 border-t border-[#E5E8EB] px-4 py-3">
+        <button
+          type="button"
+          onClick={onOpenAttachment}
+          disabled={!selectedTrip}
+          className="flex w-full items-center justify-center rounded-xl bg-[#3182F6] px-3 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#F2F4F6] disabled:text-[#8B95A1]"
+        >
+          붙임 자료
+        </button>
       </div>
 
       {formDialog ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DatePicker } from "@/components/DatePicker";
+import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 
 export type TripFormValues = {
   name: string;
@@ -105,6 +106,11 @@ export function TripFormDialog({
       endDate: resolvedEndDate,
     });
   };
+
+  useDialogKeyboard({
+    onConfirm: handleConfirm,
+    onCancel,
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

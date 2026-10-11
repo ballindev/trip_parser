@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  PersonNameLabel,
+  isResignedPerson,
+} from "@/components/PersonNameLabel";
 import type { Person, Team } from "@/lib/types";
+import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 
 type PickerTab = "people" | "teams";
 
@@ -35,15 +40,20 @@ export function ParticipantPickerDialog({
     [existingPersonIds],
   );
 
+  const activePeople = useMemo(
+    () => people.filter((person) => !isResignedPerson(person)),
+    [people],
+  );
+
   const filteredPeople = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return people;
-    return people.filter(
+    if (!query) return activePeople;
+    return activePeople.filter(
       (person) =>
         person.name.toLowerCase().includes(query) ||
         person.department.toLowerCase().includes(query),
     );
-  }, [people, searchQuery]);
+  }, [activePeople, searchQuery]);
 
   const filteredTeams = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -52,17 +62,23 @@ export function ParticipantPickerDialog({
   }, [teams, searchQuery]);
 
   const resolvedPeople = useMemo(() => {
-    const ids = new Set<string>(selectedPersonIds);
-    selectedTeamIds.forEach((teamId) => {
-      const team = teams.find((item) => item.id === teamId);
-      team?.memberIds.forEach((memberId) => ids.add(memberId));
-    });
+    const ids = new Set<string>();
+    if (tab === "people") {
+      selectedPersonIds.forEach((id) => ids.add(id));
+    } else {
+      selectedTeamIds.forEach((teamId) => {
+        const team = teams.find((item) => item.id === teamId);
+        team?.memberIds.forEach((memberId) => ids.add(memberId));
+      });
+    }
 
     return [...ids]
       .map((id) => peopleById.get(id))
       .filter((person): person is Person => Boolean(person))
-      .filter((person) => !existingSet.has(person.id));
+      .filter((person) => !existingSet.has(person.id))
+      .filter((person) => !isResignedPerson(person));
   }, [
+    tab,
     selectedPersonIds,
     selectedTeamIds,
     teams,
@@ -86,12 +102,19 @@ export function ParticipantPickerDialog({
     );
   };
 
+  useDialogKeyboard({
+    confirmDisabled: resolvedPeople.length === 0,
+    onConfirm: () => onConfirm(resolvedPeople),
+    onCancel,
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="flex max-h-[80vh] w-full max-w-[520px] flex-col rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
         <h3 className="text-[17px] font-bold text-[#191F28]">참여자 추가</h3>
         <p className="mt-1 text-[13px] text-[#8B95A1]">
-          등록된 사람 또는 팀을 선택해 추가합니다.
+          사람 또는 팀 중 한 방식으로만 선택해 추가합니다. 탭을 바꾸면 이전
+          선택은 초기화됩니다.
         </p>
 
         <div className="mt-4 flex items-center gap-2">
@@ -110,6 +133,11 @@ export function ParticipantPickerDialog({
                   onClick={() => {
                     setTab(option.value);
                     setSearchQuery("");
+                    if (option.value === "people") {
+                      setSelectedTeamIds([]);
+                    } else {
+                      setSelectedPersonIds([]);
+                    }
                   }}
                   className={`rounded-lg px-3 py-1.5 text-[13px] font-bold transition-colors ${
                     selected
@@ -152,9 +180,11 @@ export function ParticipantPickerDialog({
                       onChange={() => togglePerson(person.id)}
                       className="h-4 w-4 accent-[#3182F6]"
                     />
-                    <span className="text-[14px] font-semibold text-[#191F28]">
-                      {person.name}
-                    </span>
+                    <PersonNameLabel
+                      name={person.name}
+                      resigned={isResignedPerson(person)}
+                      className="text-[14px] font-semibold text-[#191F28]"
+                    />
                     <span className="text-[12px] text-[#8B95A1]">
                       {person.department}
                     </span>
@@ -184,9 +214,20 @@ export function ParticipantPickerDialog({
                         {team.name}
                       </p>
                       <p className="mt-0.5 text-[12px] text-[#8B95A1]">
-                        멤버 {team.memberIds.length}명 ·{" "}
+                        멤버{" "}
+                        {
+                          team.memberIds.filter((id) => {
+                            const member = peopleById.get(id);
+                            return member && !isResignedPerson(member);
+                          }).length
+                        }
+                        명 ·{" "}
                         {team.memberIds
-                          .map((id) => peopleById.get(id)?.name)
+                          .map((id) => {
+                            const member = peopleById.get(id);
+                            if (!member || isResignedPerson(member)) return null;
+                            return member.name;
+                          })
                           .filter(Boolean)
                           .join(", ")}
                       </p>

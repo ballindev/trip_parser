@@ -5,7 +5,9 @@ import { useEffect, useId, useRef, useState } from "react";
 const HOURS = Array.from({ length: 24 }, (_, i) =>
   String(i).padStart(2, "0"),
 );
-const MINUTES = ["00", "10", "20", "30", "40", "50"] as const;
+const MINUTES = Array.from({ length: 60 }, (_, i) =>
+  String(i).padStart(2, "0"),
+);
 
 function parseTime(value: string): { hour: string; minute: string } | null {
   const matched = value.trim().match(/^(\d{1,2}):(\d{2})$/);
@@ -13,15 +15,8 @@ function parseTime(value: string): { hour: string; minute: string } | null {
   const hour = matched[1].padStart(2, "0");
   const minute = matched[2];
   if (!HOURS.includes(hour)) return null;
-  if ((MINUTES as readonly string[]).includes(minute)) {
-    return { hour, minute };
-  }
-  const minuteNum = Number(minute);
-  if (Number.isNaN(minuteNum)) return null;
-  const snapped = String(
-    Math.min(50, Math.round(minuteNum / 10) * 10),
-  ).padStart(2, "0");
-  return { hour, minute: snapped };
+  if (!MINUTES.includes(minute)) return null;
+  return { hour, minute };
 }
 
 function formatTime(hour: string, minute: string): string {

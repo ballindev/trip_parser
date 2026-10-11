@@ -1,0 +1,10 @@
+-- Supabase Dashboard → SQL Editor 에서 아래 파일을 순서대로 실행하세요.
+-- 1) migrations/20261011000000_init.sql
+-- 2) migrations/20261011010000_people_employment_status.sql (필요 시)
+-- 3) migrations/20261011020000_daily_work_hours_morning_claim.sql (필요 시)
+-- 4) migrations/20261011030000_trip_participants_sort_order.sql (필요 시)
+-- 5) migrations/20261011040000_transport_item_people.sql (필요 시)
+-- 6) migrations/20261011050000_drop_lodging_item_people.sql (필요 시)
+-- 7) seed.sql  (데이터 초기화, 시드 행 없음)
+--
+-- 또는 한 번에: run_in_dashboard.sql 전체를 붙여넣고 Run

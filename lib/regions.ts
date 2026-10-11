@@ -1,22 +1,16 @@
-/** 대한민국 광역자치단체 (17개) */
-export const REGIONS = [
-  "서울특별시",
-  "부산광역시",
-  "대구광역시",
-  "인천광역시",
-  "광주광역시",
-  "대전광역시",
-  "울산광역시",
-  "세종특별자치시",
-  "경기도",
-  "강원특별자치도",
-  "충청북도",
-  "충청남도",
-  "전북특별자치도",
-  "전라남도",
-  "경상북도",
-  "경상남도",
-  "제주특별자치도",
-] as const;
+/** 출장 지역: 관내(서울) / 관외 */
+export const REGION_LOCAL = "관내(서울)";
+export const REGION_REMOTE = "관외";
+
+export const REGIONS = [REGION_LOCAL, REGION_REMOTE] as const;
 
 export type Region = (typeof REGIONS)[number];
+
+/** 예전 광역자치단체 값을 관내/관외로 정규화합니다. */
+export function normalizeRegion(region: string): string {
+  const trimmed = region.trim();
+  if (!trimmed) return "";
+  if (trimmed === REGION_LOCAL || trimmed === REGION_REMOTE) return trimmed;
+  if (trimmed === "서울특별시") return REGION_LOCAL;
+  return REGION_REMOTE;
+}

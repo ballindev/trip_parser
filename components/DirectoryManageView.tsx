@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import type { Person, Team } from "@/lib/types";
+import {
+  PersonNameLabel,
+  isResignedPerson,
+} from "@/components/PersonNameLabel";
+import type { EmploymentStatus, Person, Team } from "@/lib/types";
+import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 
 type DirectoryManageViewProps = {
   people: Person[];
@@ -13,7 +18,7 @@ type DirectoryManageViewProps = {
     teamId: string,
   ) => void;
   onDeletePerson: (personId: string) => void;
-  onAddTeam: (team: Omit<Team, "id">) => void;
+  onAddTeam: (team: Omit<Team, "id">) => void | Promise<Team | void>;
   onUpdateTeam: (teamId: string, team: Omit<Team, "id">) => void;
   onDeleteTeam: (teamId: string) => void;
 };
@@ -71,16 +76,18 @@ export function DirectoryManageView({
   const [checkedPersonIds, setCheckedPersonIds] = useState<string[]>([]);
   const [teamSearch, setTeamSearch] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
+  const [showResigned, setShowResigned] = useState(false);
   const [personDraft, setPersonDraft] = useState<{
     id?: string;
     name: string;
+    rank: string;
     teamId: string;
+    employmentStatus: EmploymentStatus;
   } | null>(null);
   const [personError, setPersonError] = useState("");
   const [teamDraft, setTeamDraft] = useState<{
     id?: string;
     name: string;
-    memberIds: string[];
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<
     | { type: "people"; ids: string[]; names: string[] }
@@ -100,34 +107,27 @@ export function DirectoryManageView({
   }, [teams, teamSearch]);
 
   const visiblePeople = useMemo(() => {
-    const base =
+    const byTeam =
       selectedTeamId === "all"
         ? people
         : people.filter((person) =>
             selectedTeam?.memberIds.includes(person.id),
           );
 
-    const query = peopleSearch.trim().toLowerCase();
-    if (!query) return base;
+    const byStatus = showResigned
+      ? byTeam
+      : byTeam.filter((person) => !isResignedPerson(person));
 
-    return base.filter(
+    const query = peopleSearch.trim().toLowerCase();
+    if (!query) return byStatus;
+
+    return byStatus.filter(
       (person) =>
         person.name.toLowerCase().includes(query) ||
+        person.rank.toLowerCase().includes(query) ||
         person.department.toLowerCase().includes(query),
     );
-  }, [people, peopleSearch, selectedTeam, selectedTeamId]);
-
-  const teamMembership = useMemo(() => {
-    const map = new Map<string, string[]>();
-    teams.forEach((team) => {
-      team.memberIds.forEach((memberId) => {
-        const current = map.get(memberId) ?? [];
-        current.push(team.name);
-        map.set(memberId, current);
-      });
-    });
-    return map;
-  }, [teams]);
+  }, [people, peopleSearch, selectedTeam, selectedTeamId, showResigned]);
 
   const exitPersonDeleteMode = () => {
     setPersonDeleteMode(false);
@@ -138,7 +138,12 @@ export function DirectoryManageView({
     if (personDeleteMode) exitPersonDeleteMode();
     const defaultTeamId = selectedTeamId !== "all" ? selectedTeamId : "";
     setPersonError("");
-    setPersonDraft({ name: "", teamId: defaultTeamId });
+    setPersonDraft({
+      name: "",
+      rank: "",
+      teamId: defaultTeamId,
+      employmentStatus: "재직",
+    });
   };
 
   const openEditPerson = (person: Person) => {
@@ -147,7 +152,9 @@ export function DirectoryManageView({
     setPersonDraft({
       id: person.id,
       name: person.name,
+      rank: person.rank,
       teamId: resolvePersonTeamId(person.id, teams),
+      employmentStatus: person.employmentStatus ?? "재직",
     });
   };
 
@@ -172,9 +179,15 @@ export function DirectoryManageView({
   const handleSavePerson = () => {
     if (!personDraft) return;
     const name = personDraft.name.trim();
+    const rank = personDraft.rank.trim();
 
     if (!name) {
       setPersonError("이름을 입력해 주세요.");
+      return;
+    }
+
+    if (!rank) {
+      setPersonError("직급을 입력해 주세요.");
       return;
     }
 
@@ -189,29 +202,42 @@ export function DirectoryManageView({
       return;
     }
 
-    const personPayload = { name, department: team.name };
+    const personPayload = {
+      name,
+      rank,
+      department: team.name,
+      employmentStatus: personDraft.employmentStatus ?? "재직",
+      resignedAt: null as string | null,
+    };
 
     if (personDraft.id) {
       onUpdatePerson(personDraft.id, personPayload, personDraft.teamId);
     } else {
-      onAddPerson(personPayload, personDraft.teamId);
+      onAddPerson(
+        { ...personPayload, employmentStatus: "재직" },
+        personDraft.teamId,
+      );
     }
     setPersonDraft(null);
     setPersonError("");
   };
 
-  const handleSaveTeam = () => {
+  const handleSaveTeam = async () => {
     if (!teamDraft) return;
     const name = teamDraft.name.trim();
     if (!name) return;
 
     if (teamDraft.id) {
+      const existing = teams.find((team) => team.id === teamDraft.id);
       onUpdateTeam(teamDraft.id, {
         name,
-        memberIds: teamDraft.memberIds,
+        memberIds: existing?.memberIds ?? [],
       });
     } else {
-      onAddTeam({ name, memberIds: teamDraft.memberIds });
+      const created = await onAddTeam({ name, memberIds: [] });
+      if (created?.id) {
+        setSelectedTeamId(created.id);
+      }
     }
     setTeamDraft(null);
   };
@@ -224,6 +250,49 @@ export function DirectoryManageView({
       name: selectedTeam.name,
     });
   };
+
+  const handleConfirmDeleteTarget = () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "people") {
+      deleteTarget.ids.forEach((id) => onDeletePerson(id));
+      if (deleteTarget.ids.includes(selectedPersonId)) {
+        setSelectedPersonId("");
+      }
+      setPersonDraft(null);
+      setPersonError("");
+      exitPersonDeleteMode();
+    } else {
+      onDeleteTeam(deleteTarget.id);
+      if (selectedTeamId === deleteTarget.id) {
+        setSelectedTeamId("all");
+      }
+    }
+    setDeleteTarget(null);
+  };
+
+  useDialogKeyboard({
+    enabled: Boolean(personDraft) && !deleteTarget,
+    confirmDisabled: teams.length === 0,
+    onConfirm: handleSavePerson,
+    onCancel: () => {
+      setPersonDraft(null);
+      setPersonError("");
+    },
+  });
+
+  useDialogKeyboard({
+    enabled: Boolean(teamDraft) && !deleteTarget,
+    onConfirm: () => {
+      void handleSaveTeam();
+    },
+    onCancel: () => setTeamDraft(null),
+  });
+
+  useDialogKeyboard({
+    enabled: Boolean(deleteTarget),
+    onConfirm: handleConfirmDeleteTarget,
+    onCancel: () => setDeleteTarget(null),
+  });
 
   const handlePersonMinusClick = () => {
     setPersonDeleteMode(true);
@@ -248,7 +317,7 @@ export function DirectoryManageView({
             </p>
           </div>
 
-          <div className="mt-8 grid min-h-[560px] grid-cols-[320px_minmax(0,1fr)] gap-4">
+          <div className="mx-auto mt-8 grid min-h-[560px] w-fit grid-cols-[300px_400px] gap-4">
             {/* Teams panel */}
             <section className="flex flex-col rounded-2xl border border-[#E5E8EB] bg-white">
               <header className="flex h-[56px] shrink-0 items-center justify-between gap-2 border-b border-[#E5E8EB] px-4">
@@ -257,9 +326,7 @@ export function DirectoryManageView({
                   <IconButton
                     label="팀 추가"
                     variant="primary"
-                    onClick={() =>
-                      setTeamDraft({ name: "", memberIds: [] })
-                    }
+                    onClick={() => setTeamDraft({ name: "" })}
                   >
                     +
                   </IconButton>
@@ -309,11 +376,7 @@ export function DirectoryManageView({
                       type="button"
                       onClick={() => setSelectedTeamId(team.id)}
                       onDoubleClick={() =>
-                        setTeamDraft({
-                          id: team.id,
-                          name: team.name,
-                          memberIds: team.memberIds,
-                        })
+                        setTeamDraft({ id: team.id, name: team.name })
                       }
                       className={`w-full rounded-xl border px-3 py-3 text-left transition-all ${
                         selected
@@ -390,13 +453,13 @@ export function DirectoryManageView({
                 </div>
               </header>
 
-              <div className="h-[60px] shrink-0 px-4 py-3">
-                <div className="flex h-full items-center gap-3">
+              <div className="shrink-0 space-y-2 px-4 py-3">
+                <div className="flex h-9 items-center gap-3">
                   <input
                     type="search"
                     value={peopleSearch}
                     onChange={(e) => setPeopleSearch(e.target.value)}
-                    placeholder="이름, 소속팀 검색"
+                    placeholder="이름, 직급, 소속팀 검색"
                     className="h-full min-w-0 flex-1 rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 text-[13px] outline-none transition focus:border-[#3182F6] focus:bg-white"
                   />
                   <div className="flex h-full shrink-0 items-center rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3">
@@ -421,6 +484,17 @@ export function DirectoryManageView({
                     </p>
                   </div>
                 </div>
+                <label className="flex cursor-pointer items-center gap-2 px-0.5">
+                  <input
+                    type="checkbox"
+                    checked={showResigned}
+                    onChange={(e) => setShowResigned(e.target.checked)}
+                    className="h-3.5 w-3.5 accent-[#3182F6]"
+                  />
+                  <span className="text-[12px] font-medium text-[#8B95A1]">
+                    퇴사 인원 표시
+                  </span>
+                </label>
               </div>
 
               {personDeleteMode ? (
@@ -463,7 +537,6 @@ export function DirectoryManageView({
 
               <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
                 {visiblePeople.map((person) => {
-                  const belonging = teamMembership.get(person.id) ?? [];
                   const selected = selectedPersonId === person.id;
                   const checked = checkedPersonIds.includes(person.id);
 
@@ -484,14 +557,20 @@ export function DirectoryManageView({
                           className="h-4 w-4 shrink-0 accent-[#F04452]"
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[14px] font-bold text-[#191F28]">
-                            {person.name}
+                          <span className="flex min-w-0 items-baseline gap-1.5">
+                            <PersonNameLabel
+                              name={person.name}
+                              resigned={isResignedPerson(person)}
+                              className="truncate text-[14px] font-bold text-[#191F28]"
+                            />
+                            {person.rank ? (
+                              <span className="shrink-0 text-[13px] font-medium text-[#8B95A1]">
+                                {person.rank}
+                              </span>
+                            ) : null}
                           </span>
                           <span className="mt-0.5 block text-[12px] text-[#8B95A1]">
                             {person.department}
-                            {belonging.length > 0
-                              ? ` · ${belonging.join(", ")}`
-                              : ""}
                           </span>
                         </span>
                       </label>
@@ -510,14 +589,20 @@ export function DirectoryManageView({
                           : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
                       }`}
                     >
-                      <p className="truncate text-[14px] font-bold text-[#191F28]">
-                        {person.name}
+                      <p className="flex min-w-0 items-baseline gap-1.5">
+                        <PersonNameLabel
+                          name={person.name}
+                          resigned={isResignedPerson(person)}
+                          className="truncate text-[14px] font-bold text-[#191F28]"
+                        />
+                        {person.rank ? (
+                          <span className="shrink-0 text-[13px] font-medium text-[#8B95A1]">
+                            {person.rank}
+                          </span>
+                        ) : null}
                       </p>
                       <p className="mt-0.5 text-[12px] text-[#8B95A1]">
                         {person.department}
-                        {belonging.length > 0
-                          ? ` · ${belonging.join(", ")}`
-                          : ""}
                       </p>
                     </button>
                   );
@@ -531,9 +616,7 @@ export function DirectoryManageView({
                         : "등록된 사람이 없습니다"}
                     </p>
                     <p className="mt-1 text-[12px] text-[#8B95A1]">
-                      {selectedTeam
-                        ? "팀을 더블클릭해 멤버를 구성해 주세요"
-                        : "+ 버튼으로 사람을 추가해 주세요"}
+                      + 버튼으로 사람을 추가해 주세요
                     </p>
                   </div>
                 ) : null}
@@ -566,7 +649,7 @@ export function DirectoryManageView({
             <div className="mt-5 space-y-4">
               <div>
                 <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
-                  이름
+                  이름 <span className="text-[#F04452]">*</span>
                 </label>
                 <input
                   autoFocus
@@ -574,6 +657,20 @@ export function DirectoryManageView({
                   value={personDraft.name}
                   onChange={(e) => {
                     setPersonDraft({ ...personDraft, name: e.target.value });
+                    setPersonError("");
+                  }}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+                  직급 <span className="text-[#F04452]">*</span>
+                </label>
+                <input
+                  className={inputClassName}
+                  value={personDraft.rank}
+                  placeholder="예: 대리, 과장"
+                  onChange={(e) => {
+                    setPersonDraft({ ...personDraft, rank: e.target.value });
                     setPersonError("");
                   }}
                 />
@@ -609,6 +706,48 @@ export function DirectoryManageView({
                   </select>
                 )}
               </div>
+              {personDraft.id ? (
+                <div className="rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#4E5968]">
+                        재직 상태
+                      </p>
+                      <p className="mt-0.5 text-[12px] text-[#8B95A1]">
+                        {personDraft.employmentStatus === "퇴사"
+                          ? "퇴사 처리된 인원입니다. 복구하면 다시 선택할 수 있습니다."
+                          : "퇴사 처리해도 기존 출장 기록은 유지됩니다."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPersonDraft({
+                          ...personDraft,
+                          employmentStatus:
+                            personDraft.employmentStatus === "퇴사"
+                              ? "재직"
+                              : "퇴사",
+                        });
+                      }}
+                      className={`shrink-0 rounded-xl px-3 py-2 text-[13px] font-bold transition-colors ${
+                        personDraft.employmentStatus === "퇴사"
+                          ? "bg-[#F2F8FF] text-[#3182F6] hover:bg-[#E8F3FF]"
+                          : "bg-[#FFF5F6] text-[#F04452] hover:bg-[#FFE5E7]"
+                      }`}
+                    >
+                      {personDraft.employmentStatus === "퇴사"
+                        ? "재직 복구"
+                        : "퇴사 처리"}
+                    </button>
+                  </div>
+                  {personDraft.employmentStatus === "퇴사" ? (
+                    <p className="mt-2 text-[12px] font-semibold text-[#F04452]">
+                      현재: 퇴사
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {personError ? (
                 <p className="text-[13px] font-medium text-[#F04452]">
                   {personError}
@@ -641,67 +780,22 @@ export function DirectoryManageView({
 
       {teamDraft ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="flex max-h-[80vh] w-full max-w-[480px] flex-col rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
+          <div className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
             <h3 className="text-[17px] font-bold text-[#191F28]">
               {teamDraft.id ? "팀 수정" : "팀 추가"}
             </h3>
-            <div className="mt-5 space-y-4 overflow-y-auto">
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
-                  팀명
-                </label>
-                <input
-                  autoFocus
-                  className={inputClassName}
-                  value={teamDraft.name}
-                  onChange={(e) =>
-                    setTeamDraft({ ...teamDraft, name: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
-                  멤버 선택
-                </label>
-                <div className="max-h-[280px] space-y-2 overflow-y-auto rounded-xl border border-[#E5E8EB] p-3">
-                  {people.map((person) => {
-                    const checked = teamDraft.memberIds.includes(person.id);
-                    return (
-                      <label
-                        key={person.id}
-                        className="flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 hover:bg-[#F9FAFB]"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => {
-                            setTeamDraft({
-                              ...teamDraft,
-                              memberIds: checked
-                                ? teamDraft.memberIds.filter(
-                                    (id) => id !== person.id,
-                                  )
-                                : [...teamDraft.memberIds, person.id],
-                            });
-                          }}
-                          className="h-4 w-4 accent-[#3182F6]"
-                        />
-                        <span className="text-[14px] font-semibold text-[#191F28]">
-                          {person.name}
-                        </span>
-                        <span className="text-[12px] text-[#8B95A1]">
-                          {person.department}
-                        </span>
-                      </label>
-                    );
-                  })}
-                  {people.length === 0 ? (
-                    <p className="py-6 text-center text-[13px] text-[#8B95A1]">
-                      먼저 사람을 등록해 주세요
-                    </p>
-                  ) : null}
-                </div>
-              </div>
+            <div className="mt-5">
+              <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+                팀명
+              </label>
+              <input
+                autoFocus
+                className={inputClassName}
+                value={teamDraft.name}
+                onChange={(e) =>
+                  setTeamDraft({ ...teamDraft, name: e.target.value })
+                }
+              />
             </div>
             <div className="mt-6 grid grid-cols-2 gap-2">
               <button
@@ -765,23 +859,7 @@ export function DirectoryManageView({
             <div className="mt-6 grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  if (deleteTarget.type === "people") {
-                    deleteTarget.ids.forEach((id) => onDeletePerson(id));
-                    if (deleteTarget.ids.includes(selectedPersonId)) {
-                      setSelectedPersonId("");
-                    }
-                    setPersonDraft(null);
-                    setPersonError("");
-                    exitPersonDeleteMode();
-                  } else {
-                    onDeleteTeam(deleteTarget.id);
-                    if (selectedTeamId === deleteTarget.id) {
-                      setSelectedTeamId("all");
-                    }
-                  }
-                  setDeleteTarget(null);
-                }}
+                onClick={handleConfirmDeleteTarget}
                 className="rounded-xl bg-[#F04452] px-4 py-3 text-[14px] font-bold text-white hover:bg-[#D93A47]"
               >
                 삭제

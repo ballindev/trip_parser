@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 
 type SelectOption = {
   value: string;
@@ -35,18 +43,55 @@ export function SelectDropdown({
   buttonClassName = "",
 }: SelectDropdownProps) {
   const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const listboxId = useId();
   const normalized = normalizeOptions(options);
   const selected = normalized.find((option) => option.value === value) ?? null;
+
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current) return;
+
+    const updatePosition = () => {
+      const button = rootRef.current?.querySelector("button");
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const menuHeight = menuRef.current?.offsetHeight ?? 200;
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const openUpward = spaceBelow < menuHeight && rect.top > spaceBelow;
+
+      setMenuStyle({
+        position: "fixed",
+        left: rect.left,
+        width: Math.max(rect.width, 200),
+        top: openUpward ? undefined : rect.bottom + 8,
+        bottom: openUpward ? window.innerHeight - rect.top + 8 : undefined,
+        zIndex: 200,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (
+        rootRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
       }
+      setOpen(false);
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
@@ -59,6 +104,62 @@ export function SelectDropdown({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  const menu =
+    open && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={menuRef}
+            id={listboxId}
+            role="listbox"
+            aria-label={label ?? placeholder}
+            style={menuStyle}
+            className="max-h-[280px] overflow-y-auto rounded-2xl border border-[#E5E8EB] bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
+          >
+            {normalized.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] font-semibold transition-colors ${
+                    isSelected
+                      ? "bg-[#F2F8FF] text-[#3182F6]"
+                      : "text-[#191F28] hover:bg-[#F2F4F6]"
+                  }`}
+                >
+                  <span className="truncate">{option.label}</span>
+                  {isSelected ? (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                      className="shrink-0 text-[#3182F6]"
+                    >
+                      <path
+                        d="M5 12.5l5 5L19 7"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
@@ -111,55 +212,7 @@ export function SelectDropdown({
         </span>
       </button>
 
-      {open ? (
-        <div
-          id={listboxId}
-          role="listbox"
-          aria-label={label ?? placeholder}
-          className="absolute left-0 top-[calc(100%+8px)] z-[60] max-h-[280px] w-full min-w-[200px] overflow-y-auto rounded-2xl border border-[#E5E8EB] bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
-        >
-          {normalized.map((option) => {
-            const isSelected = option.value === value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => {
-                  onChange(option.value);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] font-semibold transition-colors ${
-                  isSelected
-                    ? "bg-[#F2F8FF] text-[#3182F6]"
-                    : "text-[#191F28] hover:bg-[#F2F4F6]"
-                }`}
-              >
-                <span className="truncate">{option.label}</span>
-                {isSelected ? (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                    className="shrink-0 text-[#3182F6]"
-                  >
-                    <path
-                      d="M5 12.5l5 5L19 7"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+      {menu}
     </div>
   );
 }
