@@ -27,6 +27,16 @@ function resolvePersonTeamId(personId: string, teams: Team[]): string {
   return teams.find((team) => team.memberIds.includes(personId))?.id ?? "";
 }
 
+function countActiveMembers(
+  memberIds: string[],
+  peopleById: Map<string, Person>,
+): number {
+  return memberIds.filter((id) => {
+    const person = peopleById.get(id);
+    return Boolean(person) && !isResignedPerson(person);
+  }).length;
+}
+
 const inputClassName =
   "w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 py-2.5 text-[14px] text-[#191F28] outline-none transition focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15";
 
@@ -99,6 +109,16 @@ export function DirectoryManageView({
     selectedTeamId === "all"
       ? null
       : (teams.find((team) => team.id === selectedTeamId) ?? null);
+
+  const peopleById = useMemo(
+    () => new Map(people.map((person) => [person.id, person])),
+    [people],
+  );
+
+  const activePeopleCount = useMemo(
+    () => people.filter((person) => !isResignedPerson(person)).length,
+    [people],
+  );
 
   const filteredTeams = useMemo(() => {
     const query = teamSearch.trim().toLowerCase();
@@ -364,12 +384,16 @@ export function DirectoryManageView({
                     전체 인원
                   </p>
                   <p className="mt-1 text-[12px] text-[#8B95A1]">
-                    {people.length}명
+                    {activePeopleCount}명
                   </p>
                 </button>
 
                 {filteredTeams.map((team) => {
                   const selected = selectedTeamId === team.id;
+                  const activeMemberCount = countActiveMembers(
+                    team.memberIds,
+                    peopleById,
+                  );
                   return (
                     <button
                       key={team.id}
@@ -388,7 +412,7 @@ export function DirectoryManageView({
                         {team.name}
                       </p>
                       <p className="mt-1 text-[12px] text-[#8B95A1]">
-                        멤버 {team.memberIds.length}명
+                        멤버 {activeMemberCount}명
                       </p>
                     </button>
                   );
