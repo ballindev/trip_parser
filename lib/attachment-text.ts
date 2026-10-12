@@ -246,7 +246,7 @@ function buildDailyAllowanceSection(
     );
   });
 
-  return joinLines(["1. 일비", ...lines]);
+  return joinLines(["일비", ...lines]);
 }
 
 function buildMealSection(participants: Participant[]): string {
@@ -345,12 +345,10 @@ function buildMealSection(participants: Participant[]): string {
 
   const sections: string[] = [];
   if (paidLines.length > 0) {
-    sections.push(joinLines(["2. 식비", ...paidLines]));
+    sections.push(joinLines(["식비", ...paidLines]));
   }
   if (bizLines.length > 0) {
-    sections.push(
-      joinLines(["※ 사업추진비 사용", ...bizLines]),
-    );
+    sections.push(joinLines(["※ 사업추진비 사용", ...bizLines]));
   }
 
   return joinLines(sections);
@@ -416,7 +414,7 @@ function buildTransportSection(participants: Participant[]): string {
     ]);
   });
 
-  return joinLines(["3. 교통비", ...modeBlocks]);
+  return joinLines(["교통비", ...modeBlocks]);
 }
 
 function buildLodgingSection(participants: Participant[]): string {
@@ -465,14 +463,85 @@ function buildLodgingSection(participants: Participant[]): string {
     );
   });
 
-  return joinLines(["4. 숙박비", ...lines]);
+  return joinLines(["숙박비", ...lines]);
 }
 
 function buildAccountSection(trip: Trip): string {
   const summary = trip.summary?.trim();
   if (!summary) return "";
   // 계정과목 다음에 빈 줄을 하나 두기 위해 끝에 개행을 둡니다.
-  return `5. 계정과목: ${summary}\n`;
+  return `계정과목: ${summary}\n`;
+}
+
+type AttachmentBlock = {
+  /** 번호 매기기 대상이면 false, 사업추진비처럼 ※ 유지면 true */
+  note: boolean;
+  text: string;
+};
+
+function splitAttachmentBlocks(raw: string): AttachmentBlock[] {
+  if (!raw.trim()) return [];
+
+  const lines = raw.split("\n");
+  const blocks: AttachmentBlock[] = [];
+  let current: string[] = [];
+  let currentNote = false;
+
+  const flush = () => {
+    if (current.length === 0) return;
+    blocks.push({ note: currentNote, text: current.join("\n") });
+    current = [];
+  };
+
+  for (const line of lines) {
+    const isSectionStart =
+      line === "일비" ||
+      line === "식비" ||
+      line === "교통비" ||
+      line === "숙박비" ||
+      line.startsWith("계정과목:") ||
+      line.startsWith("※ ");
+
+    if (isSectionStart && current.length > 0) {
+      flush();
+    }
+
+    if (isSectionStart) {
+      currentNote = line.startsWith("※ ");
+      current = [line];
+      continue;
+    }
+
+    if (current.length > 0) {
+      current.push(line);
+    }
+  }
+
+  flush();
+  return blocks;
+}
+
+/** 생략된 항목을 건너뛰고 1, 2, 3… 순으로 번호를 매깁니다. ※ 항목은 번호를 붙이지 않습니다. */
+function numberAttachmentSections(sections: string[]): string {
+  let nextNumber = 1;
+
+  return joinLines(
+    sections.flatMap((section) => {
+      const blocks = splitAttachmentBlocks(section);
+      if (blocks.length === 0) return [];
+
+      return blocks.map((block) => {
+        if (block.note) return block.text;
+
+        const lines = block.text.split("\n");
+        const [first = "", ...rest] = lines;
+        const numbered = `${nextNumber}. ${first}`;
+        nextNumber += 1;
+        // 계정과목 등 원본 끝의 빈 줄을 유지하기 위해 filter 없이 합칩니다.
+        return [numbered, ...rest].join("\n");
+      });
+    }),
+  );
 }
 
 function buildSettlementSection(grandTotal: number): string {
@@ -556,14 +625,15 @@ export function buildAttachmentText(
     sumTransport(participants) +
     sumLodging(participants);
 
-  return joinLines([
+  const numberedBody = numberAttachmentSections([
     buildDailyAllowanceSection(participants, people),
     buildMealSection(participants),
     buildTransportSection(participants),
     buildLodgingSection(participants),
     buildAccountSection(trip),
-    buildSettlementSection(grandTotal),
   ]);
+
+  return joinLines([numberedBody, buildSettlementSection(grandTotal)]);
 }
 
 export function getIncompleteParticipants(trip: Trip): Participant[] {
