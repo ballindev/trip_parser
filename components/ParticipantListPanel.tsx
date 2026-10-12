@@ -339,14 +339,20 @@ export function ParticipantListPanel({
                       }
                       onDrop={(event) => handleItemDrop(event, participant.id)}
                       onDragEnd={clearDragState}
-                      className={`cursor-grab rounded-2xl border transition-all active:cursor-grabbing ${
+                      className={`relative cursor-grab overflow-hidden rounded-2xl border transition-all active:cursor-grabbing ${
                         itemDragging
-                          ? "border-dashed border-[#B0B8C1] bg-[#F9FAFB] opacity-50"
+                          ? "border-dashed border-[#B0B8C1] bg-[#F0F1F3] opacity-50"
                           : selected
-                            ? "border-[#3182F6] bg-[#F2F8FF]"
-                            : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
+                            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+                            : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
                       }`}
                     >
+                      {selected && !itemDragging ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-[#3182F6]"
+                        />
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => onSelectParticipant(participant.id)}

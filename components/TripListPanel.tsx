@@ -194,12 +194,18 @@ export function TripListPanel({
                 type="button"
                 onClick={() => onSelectTrip(trip.id)}
                 onDoubleClick={() => handleOpenEdit(trip)}
-                className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                className={`relative w-full overflow-hidden rounded-2xl border p-4 text-left transition-all ${
                   selected
-                    ? "border-[#3182F6] bg-[#F2F8FF] shadow-[0_4px_16px_rgba(49,130,246,0.12)]"
-                    : "border-transparent bg-[#F9FAFB] hover:border-[#E5E8EB] hover:bg-white"
+                    ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+                    : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
                 }`}
               >
+                {selected ? (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
+                  />
+                ) : null}
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#191F28]">
                     {trip.name}
@@ -212,7 +218,13 @@ export function TripListPanel({
                   <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#8B95A1]">
                     {trip.summary}
                   </p>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#3182F6] ring-1 ring-[#D6E8FF]">
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      selected
+                        ? "bg-[#F2F4F6] text-[#3182F6]"
+                        : "bg-white/70 text-[#4E5968]"
+                    }`}
+                  >
                     {participationBadge(completed, trip.participants.length)}
                   </span>
                 </div>
