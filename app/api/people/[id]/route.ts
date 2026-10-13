@@ -44,13 +44,18 @@ export async function PATCH(request: Request, { params }: Params) {
       }
     }
 
+    const nextName =
+      body.name !== undefined ? body.name.trim() : undefined;
+    const nextDepartment =
+      body.department !== undefined ? body.department.trim() : undefined;
+
     const { data, error } = await supabase
       .from("people")
       .update({
-        ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(nextName !== undefined ? { name: nextName } : {}),
         ...(body.rank !== undefined ? { rank: body.rank.trim() } : {}),
-        ...(body.department !== undefined
-          ? { department: body.department.trim() }
+        ...(nextDepartment !== undefined
+          ? { department: nextDepartment }
           : {}),
         ...employmentPatch,
       })
@@ -59,6 +64,22 @@ export async function PATCH(request: Request, { params }: Params) {
       .single();
 
     if (error) return jsonError(error.message, 500);
+
+    // 출장 참여자에 복사된 이름/부서도 함께 갱신합니다.
+    if (nextName !== undefined || nextDepartment !== undefined) {
+      const participantPatch: { name?: string; department?: string } = {};
+      if (nextName !== undefined) participantPatch.name = nextName;
+      if (nextDepartment !== undefined) {
+        participantPatch.department = nextDepartment;
+      }
+
+      const { error: participantError } = await supabase
+        .from("trip_participants")
+        .update(participantPatch)
+        .eq("person_id", id);
+
+      if (participantError) return jsonError(participantError.message, 500);
+    }
 
     if (body.teamId !== undefined) {
       await supabase.from("team_members").delete().eq("person_id", id);

@@ -487,6 +487,20 @@ export function TripReportDashboard() {
                   return { ...team, memberIds: withoutPerson };
                 }),
               );
+              setTrips((prev) =>
+                prev.map((trip) => ({
+                  ...trip,
+                  participants: trip.participants.map((participant) =>
+                    participant.personId === personId
+                      ? {
+                          ...participant,
+                          name: updated.name,
+                          department: updated.department,
+                        }
+                      : participant,
+                  ),
+                })),
+              );
             } catch (err) {
               setError(err instanceof Error ? err.message : "인원 수정 실패");
             }
