@@ -118,7 +118,7 @@ export function TripFormDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="trip-form-title"
-        className="w-full max-w-[420px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+        className="w-full max-w-[560px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
       >
         <h3
           id="trip-form-title"
@@ -139,7 +139,7 @@ export function TripFormDialog({
               autoFocus
               className={inputClassName}
               value={name}
-              placeholder="예: 부산 물류센터 점검"
+              placeholder="예: 전국학교스포츠클럽 출장"
               onChange={(e) => {
                 setName(e.target.value);
                 setError("");
@@ -154,7 +154,7 @@ export function TripFormDialog({
             <input
               className={inputClassName}
               value={summary}
-              placeholder="예: 물류 자동화 설비 현황 점검"
+              placeholder="예: 학교스포츠클럽 지원-전국학교스포츠클럽 축전-여비-국내여비"
               onChange={(e) => {
                 setSummary(e.target.value);
                 setError("");

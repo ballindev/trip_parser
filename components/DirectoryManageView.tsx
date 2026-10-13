@@ -329,7 +329,7 @@ export function DirectoryManageView({
         <div className="mx-auto flex w-full max-w-[1100px] flex-col">
           <div className="text-center">
             <h2 className="text-[22px] font-bold tracking-tight text-[#191F28]">
-              인원/팀 관리
+              팀/인원 관리
             </h2>
             <p className="mt-2 text-[14px] leading-6 text-[#8B95A1]">
               +/− 로 추가·삭제하고, 사람을 더블클릭하면 수정하거나 삭제할 수

@@ -375,7 +375,7 @@ export function TripReportDashboard() {
             {(
               [
                 { value: "trips", label: "출장 취합" },
-                { value: "directory", label: "인원/팀 관리" },
+                { value: "directory", label: "팀/인원 관리" },
               ] as const
             ).map((option) => {
               const selected = appTab === option.value;
