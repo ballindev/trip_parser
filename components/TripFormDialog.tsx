@@ -118,7 +118,7 @@ export function TripFormDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="trip-form-title"
-        className="w-full max-w-[560px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+        className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
       >
         <h3
           id="trip-form-title"

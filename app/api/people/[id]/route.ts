@@ -84,9 +84,25 @@ export async function PATCH(request: Request, { params }: Params) {
     if (body.teamId !== undefined) {
       await supabase.from("team_members").delete().eq("person_id", id);
       if (body.teamId) {
+        const { data: maxMember } = await supabase
+          .from("team_members")
+          .select("sort_order")
+          .eq("team_id", body.teamId)
+          .order("sort_order", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const nextMemberOrder =
+          typeof maxMember?.sort_order === "number"
+            ? maxMember.sort_order + 1
+            : 0;
+
         const { error: memberError } = await supabase
           .from("team_members")
-          .insert({ team_id: body.teamId, person_id: id });
+          .insert({
+            team_id: body.teamId,
+            person_id: id,
+            sort_order: nextMemberOrder,
+          });
         if (memberError) return jsonError(memberError.message, 500);
       }
     }
@@ -101,6 +117,20 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const { id } = await params;
     const supabase = getSupabaseServerClient();
+
+    const { count, error: historyError } = await supabase
+      .from("trip_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("person_id", id);
+
+    if (historyError) return jsonError(historyError.message, 500);
+    if ((count ?? 0) > 0) {
+      return jsonError(
+        "출장 이력이 있는 인원은 삭제할 수 없습니다. 퇴사 처리해 주세요.",
+        400,
+      );
+    }
+
     const { error } = await supabase.from("people").delete().eq("id", id);
     if (error) return jsonError(error.message, 500);
     return jsonOk({ ok: true });

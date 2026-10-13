@@ -164,7 +164,7 @@ export function SelectDropdown({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       {label ? (
-        <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+        <label className="mb-1.5 block text-[13px] font-semibold text-[#64748B]">
           {label}
         </label>
       ) : null}
@@ -175,15 +175,15 @@ export function SelectDropdown({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-[#F9FAFB] px-3.5 py-2.5 text-left text-[14px] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15 ${
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15 ${
           open
             ? "border-[#3182F6] bg-white ring-2 ring-[#3182F6]/15"
-            : "border-[#E5E8EB]"
+            : "border-gray-300"
         } ${buttonClassName}`}
       >
         <span
           className={`truncate ${
-            selected ? "font-medium text-[#191F28]" : "text-[#8B95A1]"
+            selected ? "font-medium text-[#1E293B]" : "text-[#64748B]"
           }`}
         >
           {selected?.label ?? placeholder}

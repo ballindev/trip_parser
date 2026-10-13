@@ -5,6 +5,10 @@ import {
   TripFormDialog,
   type TripFormValues,
 } from "@/components/TripFormDialog";
+import {
+  RowDeleteButton,
+  RowEditButton,
+} from "@/components/RowActionIcons";
 import { formatDateRange, participationBadge } from "@/lib/format";
 import type { Trip } from "@/lib/types";
 import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
@@ -41,7 +45,7 @@ export function TripListPanel({
   onDeleteTrip,
   onOpenAttachment,
 }: TripListPanelProps) {
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Trip | null>(null);
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -62,23 +66,18 @@ export function TripListPanel({
     });
   }, [trips, searchQuery]);
 
-  const handleClickDelete = () => {
-    if (!selectedTrip) return;
-    setIsDeleteConfirmOpen(true);
-  };
-
   const handleConfirmDelete = () => {
-    if (!selectedTrip) return;
-    onDeleteTrip(selectedTrip.id);
-    setIsDeleteConfirmOpen(false);
+    if (!deleteTarget) return;
+    onDeleteTrip(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const handleCancelDelete = () => {
-    setIsDeleteConfirmOpen(false);
+    setDeleteTarget(null);
   };
 
   useDialogKeyboard({
-    enabled: isDeleteConfirmOpen && Boolean(selectedTrip) && !formDialog,
+    enabled: Boolean(deleteTarget) && !formDialog,
     onConfirm: handleConfirmDelete,
     onCancel: handleCancelDelete,
   });
@@ -113,30 +112,20 @@ export function TripListPanel({
   };
 
   return (
-    <aside className="relative flex h-full w-[20%] min-w-[240px] flex-col border-r border-[#E5E8EB] bg-white">
-      <header className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#E5E8EB] px-4">
-        <h2 className="truncate text-[15px] font-bold tracking-tight text-[#191F28]">
-          출장 목록
+    <aside className="relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <header className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] px-4">
+        <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
+          출장 목록{" "}
+          <span className="font-medium text-[#64748B]">({trips.length})</span>
         </h2>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            aria-label="출장 추가"
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-lg font-bold leading-none text-white transition-colors hover:bg-[#1B64DA]"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={handleClickDelete}
-            disabled={!selectedTrip}
-            aria-label="출장 삭제"
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2F4F6] text-lg font-bold leading-none text-[#4E5968] transition-colors hover:bg-[#FFE5E7] hover:text-[#F04452] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-[#F2F4F6] disabled:hover:text-[#4E5968]"
-          >
-            −
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleOpenCreate}
+          aria-label="출장 추가"
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-lg font-bold leading-none text-white transition-colors hover:bg-[#1B64DA]"
+        >
+          +
+        </button>
       </header>
 
       <div className="h-[60px] shrink-0 px-4 py-3">
@@ -147,14 +136,14 @@ export function TripListPanel({
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="출장명, 적요, 일정 검색"
             aria-label="출장 검색"
-            className="h-full w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 pr-9 text-[13px] text-[#191F28] outline-none transition placeholder:text-[#8B95A1] focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
+            className="h-full w-full rounded-xl border border-gray-300 bg-white px-3 pr-9 text-[13px] text-[#1E293B] outline-none transition placeholder:text-[#64748B] focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
           />
           {searchQuery ? (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="검색어 지우기"
-              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#4E5968]"
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#64748B]"
             >
               ×
             </button>
@@ -164,20 +153,20 @@ export function TripListPanel({
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-4">
         {trips.length === 0 ? (
-          <div className="rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
-            <p className="text-[13px] font-semibold text-[#4E5968]">
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center shadow-sm">
+            <p className="text-[13px] font-semibold text-[#64748B]">
               등록된 출장이 없습니다
             </p>
-            <p className="mt-1 text-[12px] text-[#8B95A1]">
+            <p className="mt-1 text-[12px] text-[#64748B]">
               + 버튼으로 출장을 추가해 주세요
             </p>
           </div>
         ) : filteredTrips.length === 0 ? (
-          <div className="rounded-2xl bg-[#F9FAFB] px-4 py-8 text-center">
-            <p className="text-[13px] font-semibold text-[#4E5968]">
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center shadow-sm">
+            <p className="text-[13px] font-semibold text-[#64748B]">
               검색 결과가 없습니다
             </p>
-            <p className="mt-1 text-[12px] text-[#8B95A1]">
+            <p className="mt-1 text-[12px] text-[#64748B]">
               다른 키워드로 다시 검색해 주세요
             </p>
           </div>
@@ -189,15 +178,12 @@ export function TripListPanel({
             const selected = trip.id === selectedTripId;
 
             return (
-              <button
+              <div
                 key={trip.id}
-                type="button"
-                onClick={() => onSelectTrip(trip.id)}
-                onDoubleClick={() => handleOpenEdit(trip)}
-                className={`relative w-full overflow-hidden rounded-2xl border p-4 text-left transition-all ${
+                className={`group relative overflow-hidden rounded-2xl border transition-all ${
                   selected
-                    ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
-                    : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
+                    ? "border-[#93C5FD] bg-[#EFF6FF] shadow-sm"
+                    : "border-slate-200 bg-white shadow-sm hover:bg-white"
                 }`}
               >
                 {selected ? (
@@ -206,42 +192,62 @@ export function TripListPanel({
                     className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
                   />
                 ) : null}
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-[#191F28]">
-                    {trip.name}
-                  </h3>
-                  <p className="shrink-0 pt-0.5 text-right text-[12px] font-medium leading-snug text-[#4E5968]">
-                    {formatDateRange(trip.startDate, trip.endDate)}
-                  </p>
+                <button
+                  type="button"
+                  onClick={() => onSelectTrip(trip.id)}
+                  onDoubleClick={() => handleOpenEdit(trip)}
+                  className="w-full p-4 text-left"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-[#1E293B]">
+                      {trip.name}
+                    </h3>
+                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-[#64748B] transition-opacity group-hover:opacity-0">
+                      {formatDateRange(trip.startDate, trip.endDate)}
+                    </p>
+                  </div>
+                  <div className="mt-2 flex items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#475569]">
+                      {trip.summary}
+                    </p>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity group-hover:opacity-0 ${
+                        selected
+                          ? "bg-white text-[#3182F6]"
+                          : "bg-[#F3F4F6] text-[#64748B]"
+                      }`}
+                    >
+                      {participationBadge(
+                        completed,
+                        trip.participants.length,
+                      )}
+                    </span>
+                  </div>
+                </button>
+                <div className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                  <RowEditButton
+                    label="출장 수정"
+                    onClick={() => handleOpenEdit(trip)}
+                  />
+                  <RowDeleteButton
+                    label="출장 삭제"
+                    onClick={() => setDeleteTarget(trip)}
+                  />
                 </div>
-                <div className="mt-2 flex items-start justify-between gap-2">
-                  <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#8B95A1]">
-                    {trip.summary}
-                  </p>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      selected
-                        ? "bg-[#F2F4F6] text-[#3182F6]"
-                        : "bg-white/70 text-[#4E5968]"
-                    }`}
-                  >
-                    {participationBadge(completed, trip.participants.length)}
-                  </span>
-                </div>
-              </button>
+              </div>
             );
           })
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[#E5E8EB] px-4 py-3">
+      <div className="shrink-0 border-t border-[#E2E8F0] px-4 py-3">
         <button
           type="button"
           onClick={onOpenAttachment}
           disabled={!selectedTrip}
-          className="flex w-full items-center justify-center rounded-xl bg-[#3182F6] px-3 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#F2F4F6] disabled:text-[#8B95A1]"
+          className="flex w-full items-center justify-center rounded-xl bg-[#3182F6] px-3 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#F1F5F9] disabled:text-[#64748B]"
         >
-          붙임 자료
+          붙임 자료 생성
         </button>
       </div>
 
@@ -263,7 +269,7 @@ export function TripListPanel({
         />
       ) : null}
 
-      {isDeleteConfirmOpen && selectedTrip ? (
+      {deleteTarget ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div
             role="dialog"
@@ -273,13 +279,13 @@ export function TripListPanel({
           >
             <h3
               id="delete-trip-title"
-              className="text-[17px] font-bold text-[#191F28]"
+              className="text-[17px] font-bold text-[#1E293B]"
             >
               출장을 삭제할까요?
             </h3>
-            <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
-              <span className="font-semibold text-[#191F28]">
-                {selectedTrip.name}
+            <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
+              <span className="font-semibold text-[#1E293B]">
+                {deleteTarget.name}
               </span>
               을(를) 목록에서 삭제합니다. 참여자 데이터도 함께 삭제되며 복구할
               수 없습니다.
@@ -295,7 +301,7 @@ export function TripListPanel({
               <button
                 type="button"
                 onClick={handleCancelDelete}
-                className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+                className="rounded-xl bg-[#F1F5F9] px-4 py-3 text-[14px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0]"
               >
                 취소
               </button>

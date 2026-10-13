@@ -63,6 +63,11 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  reorderTeams: (orderedIds: string[]) =>
+    request<{ ok: boolean; orderedIds: string[] }>("/api/teams", {
+      method: "PATCH",
+      body: JSON.stringify({ orderedIds }),
+    }),
   deleteTeam: (id: string) =>
     request<{ ok: boolean }>(`/api/teams/${id}`, { method: "DELETE" }),
 

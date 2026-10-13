@@ -26,11 +26,13 @@ export type DbPerson = {
 export type DbTeam = {
   id: string;
   name: string;
+  sort_order?: number | null;
 };
 
 export type DbTeamMember = {
   team_id: string;
   person_id: string;
+  sort_order?: number | null;
 };
 
 export type DbTrip = {
@@ -121,18 +123,32 @@ export function mapTeams(
   teams: DbTeam[],
   members: DbTeamMember[],
 ): Team[] {
+  const sortedMembers = [...members].sort((a, b) => {
+    const orderA = a.sort_order ?? 0;
+    const orderB = b.sort_order ?? 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return a.person_id.localeCompare(b.person_id);
+  });
+
   const byTeam = new Map<string, string[]>();
-  members.forEach((member) => {
+  sortedMembers.forEach((member) => {
     const list = byTeam.get(member.team_id) ?? [];
     list.push(member.person_id);
     byTeam.set(member.team_id, list);
   });
 
-  return teams.map((team) => ({
-    id: team.id,
-    name: team.name,
-    memberIds: byTeam.get(team.id) ?? [],
-  }));
+  return [...teams]
+    .sort((a, b) => {
+      const orderA = a.sort_order ?? 0;
+      const orderB = b.sort_order ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.name.localeCompare(b.name);
+    })
+    .map((team) => ({
+      id: team.id,
+      name: team.name,
+      memberIds: byTeam.get(team.id) ?? [],
+    }));
 }
 
 function emptyForm(startDate = "", endDate = ""): ReportForm {

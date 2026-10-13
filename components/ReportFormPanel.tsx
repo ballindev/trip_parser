@@ -77,6 +77,7 @@ type ReportFormPanelProps = {
   directoryPeople?: Person[];
   /** 같은 출장의 다른 참여자 포함(렌트 일비 반액 판정용) */
   tripParticipants?: Participant[];
+  tripName?: string;
   tripStartDate?: string;
   tripEndDate?: string;
   saving?: boolean;
@@ -100,22 +101,22 @@ function FormSection({
 }) {
   return (
     <section
-      className={`grid grid-cols-1 gap-4 border-b border-[#E5E8EB] py-5 last:border-b-0 md:grid-cols-[188px_minmax(0,1fr)] md:gap-0 ${
+      className={`grid grid-cols-1 gap-4 border-b border-[#E2E8F0] py-5 last:border-b-0 md:grid-cols-[188px_minmax(0,1fr)] md:gap-0 ${
         disabled ? "opacity-60" : ""
       }`}
     >
       <div className="md:pr-5">
-        <h3 className="text-[15px] font-bold leading-6 text-[#191F28]">
+        <h3 className="text-[15px] font-bold leading-6 text-[#1E293B]">
           {title}
         </h3>
-        <p className="mt-1.5 text-[12px] leading-5 text-[#8B95A1]">
+        <p className="mt-1.5 text-[12px] leading-5 text-[#64748B]">
           {description}
         </p>
       </div>
-      <div className="min-w-0 md:border-l md:border-[#E5E8EB] md:pl-5">
+      <div className="min-w-0 md:border-l md:border-[#E2E8F0] md:pl-5">
         {disabled ? (
-          <div className="rounded-xl border border-dashed border-[#D1D6DB] bg-[#F9FAFB] px-4 py-5">
-            <p className="text-[13px] font-semibold text-[#4E5968]">
+          <div className="rounded-xl border border-dashed border-[#D1D6DB] bg-[#F8FAFC] px-4 py-5">
+            <p className="text-[13px] font-semibold text-[#64748B]">
               {disabledMessage ?? "이 항목은 현재 사용할 수 없습니다."}
             </p>
           </div>
@@ -136,8 +137,8 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2.5">
-      <span className="text-[13px] text-[#8B95A1]">{label}</span>
-      <span className="text-right text-[13px] font-semibold text-[#191F28]">
+      <span className="text-[13px] text-[#64748B]">{label}</span>
+      <span className="text-right text-[13px] font-semibold text-[#1E293B]">
         {value}
       </span>
     </div>
@@ -158,11 +159,11 @@ function formatAmountInput(value: number): string {
 }
 
 const numberInputClassName =
-  "h-9 w-full rounded-lg border border-[#E5E8EB] bg-white px-2 text-right text-[13px] tabular-nums text-[#191F28] outline-none transition [appearance:textfield] focus:border-[#3182F6] focus:ring-2 focus:ring-[#3182F6]/15 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "h-9 w-full rounded-lg border border-gray-300 bg-white px-2 text-right text-[13px] tabular-nums text-[#1E293B] outline-none transition [appearance:textfield] focus:border-[#3182F6] focus:ring-2 focus:ring-[#3182F6]/15 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 /** 교통비/숙박비 공통 고정 그리드: 수단 | 금액+원 | × | 인원+인(+배지) | × | 회수/일수 | = | 총합 | 삭제 */
 const costRowGridClassName =
-  "grid w-full grid-cols-[104px_112px_12px_108px_12px_64px_12px_100px_28px] items-center gap-x-1.5 overflow-visible rounded-2xl bg-[#F9FAFB] px-2.5 py-2";
+  "grid w-full grid-cols-[104px_112px_12px_108px_12px_64px_12px_100px_28px] items-center gap-x-1.5 overflow-visible rounded-2xl bg-[#F8FAFC] px-2.5 py-2";
 
 function isCostLineFilled(
   item: Pick<CostLineItem, "amount" | "people" | "times"> & {
@@ -210,7 +211,7 @@ function CostLineRow({
   const rowTotal = calcCostLineTotal({ id: "", amount, people, times });
 
   return (
-    <div className="space-y-2 rounded-2xl bg-[#F9FAFB] px-2.5 py-2">
+    <div className="space-y-2 rounded-2xl bg-[#F8FAFC] px-2.5 py-2">
       <div className={`${costRowGridClassName} !rounded-none !bg-transparent !p-0`}>
         <div className="min-w-0">{modeSlot ?? null}</div>
 
@@ -226,12 +227,12 @@ function CostLineRow({
               onChange({ amount: parseDigitsOnly(e.target.value) })
             }
           />
-          <span className="shrink-0 text-[12px] font-semibold text-[#8B95A1]">
+          <span className="shrink-0 text-[12px] font-semibold text-[#64748B]">
             원
           </span>
         </div>
 
-        <span className="text-center text-[13px] font-semibold text-[#8B95A1]">
+        <span className="text-center text-[13px] font-semibold text-[#64748B]">
           ×
         </span>
 
@@ -258,7 +259,7 @@ function CostLineRow({
               tabIndex={peopleReadOnly ? -1 : undefined}
               className={`${numberInputClassName} ${
                 peopleReadOnly
-                  ? "cursor-not-allowed border-dashed bg-[#EEF0F3] text-[#6B7684]"
+                  ? "cursor-not-allowed border-dashed bg-[#EEF0F3] text-[#64748B]"
                   : ""
               }`}
               value={people || ""}
@@ -268,17 +269,17 @@ function CostLineRow({
               }}
             />
           </div>
-          <span className="shrink-0 text-[12px] font-semibold text-[#8B95A1]">
+          <span className="shrink-0 text-[12px] font-semibold text-[#64748B]">
             인
           </span>
           {peopleReadOnly && peopleBadge ? (
-            <span className="shrink-0 rounded-md bg-[#E5E8EB] px-1.5 py-0.5 text-[10px] font-bold tracking-tight text-[#6B7684]">
+            <span className="shrink-0 rounded-md bg-[#E5E8EB] px-1.5 py-0.5 text-[10px] font-bold tracking-tight text-[#64748B]">
               {peopleBadge}
             </span>
           ) : null}
         </div>
 
-        <span className="text-center text-[13px] font-semibold text-[#8B95A1]">
+        <span className="text-center text-[13px] font-semibold text-[#64748B]">
           ×
         </span>
 
@@ -293,12 +294,12 @@ function CostLineRow({
               onChange({ times: parseDigitsOnly(e.target.value) })
             }
           />
-          <span className="shrink-0 text-[12px] font-semibold text-[#8B95A1]">
+          <span className="shrink-0 text-[12px] font-semibold text-[#64748B]">
             {timesUnit}
           </span>
         </div>
 
-        <span className="text-center text-[13px] font-semibold text-[#8B95A1]">
+        <span className="text-center text-[13px] font-semibold text-[#64748B]">
           =
         </span>
 
@@ -312,7 +313,7 @@ function CostLineRow({
           type="button"
           aria-label={removeLabel}
           onClick={onRemove}
-          className="flex h-7 w-7 items-center justify-center justify-self-end rounded-lg bg-[#E5E8EB] text-[15px] font-bold leading-none text-[#4E5968] transition-colors hover:bg-[#FFE5E7] hover:text-[#F04452]"
+          className="flex h-7 w-7 items-center justify-center justify-self-end rounded-lg bg-[#E5E8EB] text-[15px] font-bold leading-none text-[#64748B] transition-colors hover:bg-[#FFE5E7] hover:text-[#F04452]"
         >
           −
         </button>
@@ -435,9 +436,9 @@ function PeopleSelector({
 
   return (
     <>
-      <div className="rounded-xl border border-[#E5E8EB] bg-white px-3 py-2.5">
+      <div className="rounded-xl border border-[#E2E8F0] bg-white px-3 py-2.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] font-semibold text-[#8B95A1]">
+          <p className="text-[12px] font-semibold text-[#64748B]">
             {label}
             <span className="ml-1 font-medium text-[#B0B8C1]">
               · 선택 시 인원 수 자동 반영
@@ -454,9 +455,9 @@ function PeopleSelector({
 
         <div className="mt-2 flex flex-wrap gap-1.5">
           {!authorPersonId ? (
-            <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[12px] font-semibold text-[#4E5968]">
+            <span className="inline-flex items-center rounded-full bg-[#EEF0F3] px-2.5 py-1 text-[12px] font-semibold text-[#64748B]">
               {authorName}
-              <span className="ml-1 text-[11px] font-medium text-[#8B95A1]">
+              <span className="ml-1 text-[11px] font-medium text-[#64748B]">
                 본인
               </span>
             </span>
@@ -469,7 +470,7 @@ function PeopleSelector({
                 key={person.id}
                 className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold ${
                   isAuthor
-                    ? "bg-[#EEF0F3] text-[#4E5968]"
+                    ? "bg-[#EEF0F3] text-[#64748B]"
                     : "bg-[#F2F8FF] text-[#3182F6]"
                 }`}
               >
@@ -478,7 +479,7 @@ function PeopleSelector({
                   resigned={isResignedPerson(person)}
                 />
                 {isAuthor ? (
-                  <span className="text-[11px] font-medium text-[#8B95A1]">
+                  <span className="text-[11px] font-medium text-[#64748B]">
                     본인
                   </span>
                 ) : (
@@ -486,7 +487,7 @@ function PeopleSelector({
                     type="button"
                     aria-label={`${person.name} 제거`}
                     onClick={() => removePerson(person.id)}
-                    className="ml-0.5 text-[14px] leading-none text-[#8B95A1] hover:text-[#F04452]"
+                    className="ml-0.5 text-[14px] leading-none text-[#64748B] hover:text-[#F04452]"
                   >
                     ×
                   </button>
@@ -500,10 +501,10 @@ function PeopleSelector({
       {pickerOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="flex max-h-[80vh] w-full max-w-[440px] flex-col rounded-2xl bg-white p-5 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <h3 className="text-[17px] font-bold text-[#191F28]">
+            <h3 className="text-[17px] font-bold text-[#1E293B]">
               {pickerTitle}
             </h3>
-            <p className="mt-1 text-[13px] text-[#8B95A1]">
+            <p className="mt-1 text-[13px] text-[#64748B]">
               회사 인원에서 검색해 선택합니다. 작성자 본인은 기본 포함됩니다.
             </p>
 
@@ -513,10 +514,10 @@ function PeopleSelector({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="이름, 직급, 소속팀 검색"
-              className="mt-4 h-11 w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 text-[14px] outline-none transition focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
+              className="mt-4 h-11 w-full rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 text-[14px] outline-none transition focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
             />
 
-            <div className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-[#E5E8EB] p-2">
+            <div className="mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-[#E2E8F0] p-2">
               {filteredPeople.map((person) => {
                 const isAuthor = person.id === authorPersonId;
                 const checked = draftIds.includes(person.id) || isAuthor;
@@ -524,7 +525,7 @@ function PeopleSelector({
                   <label
                     key={person.id}
                     className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-                      checked ? "bg-[#F2F8FF]" : "hover:bg-[#F9FAFB]"
+                      checked ? "bg-[#F2F8FF]" : "hover:bg-[#F8FAFC]"
                     } ${isAuthor ? "cursor-default" : ""}`}
                   >
                     <input
@@ -542,24 +543,24 @@ function PeopleSelector({
                       className="h-4 w-4 accent-[#3182F6] disabled:opacity-70"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="flex min-w-0 items-baseline gap-1.5 truncate text-[14px] font-bold text-[#191F28]">
+                      <span className="flex min-w-0 items-baseline gap-1.5 truncate text-[14px] font-bold text-[#1E293B]">
                         <PersonNameLabel
                           name={person.name}
                           resigned={isResignedPerson(person)}
                           className="truncate"
                         />
                         {person.rank ? (
-                          <span className="shrink-0 text-[13px] font-medium text-[#8B95A1]">
+                          <span className="shrink-0 text-[13px] font-medium text-[#64748B]">
                             {person.rank}
                           </span>
                         ) : null}
                         {isAuthor ? (
-                          <span className="shrink-0 text-[12px] font-medium text-[#8B95A1]">
+                          <span className="shrink-0 text-[12px] font-medium text-[#64748B]">
                             (본인)
                           </span>
                         ) : null}
                       </span>
-                      <span className="mt-0.5 block truncate text-[12px] text-[#8B95A1]">
+                      <span className="mt-0.5 block truncate text-[12px] text-[#64748B]">
                         {person.department}
                       </span>
                     </span>
@@ -567,13 +568,13 @@ function PeopleSelector({
                 );
               })}
               {filteredPeople.length === 0 ? (
-                <p className="px-3 py-8 text-center text-[13px] text-[#8B95A1]">
+                <p className="px-3 py-8 text-center text-[13px] text-[#64748B]">
                   검색 결과가 없습니다
                 </p>
               ) : null}
             </div>
 
-            <p className="mt-3 text-[12px] font-semibold text-[#4E5968]">
+            <p className="mt-3 text-[12px] font-semibold text-[#64748B]">
               선택{" "}
               <span className="text-[#3182F6]">
                 {new Set([
@@ -595,7 +596,7 @@ function PeopleSelector({
               <button
                 type="button"
                 onClick={() => setPickerOpen(false)}
-                className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] hover:bg-[#E5E8EB]"
+                className="rounded-xl bg-[#F1F5F9] px-4 py-3 text-[14px] font-bold text-[#64748B] hover:bg-[#E2E8F0]"
               >
                 취소
               </button>
@@ -616,6 +617,7 @@ export function ReportFormPanel({
   form,
   directoryPeople = [],
   tripParticipants = [],
+  tripName = "",
   tripStartDate = "",
   tripEndDate = "",
   saving = false,
@@ -812,14 +814,21 @@ export function ReportFormPanel({
 
   if (!participant || !form) {
     return (
-      <section className="flex h-full w-[70%] flex-1 items-center justify-center bg-[#F2F4F6]">
-        <div className="rounded-2xl bg-white px-8 py-10 text-center shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
-          <p className="text-[15px] font-bold text-[#191F28]">
-            참여자를 선택해 주세요
-          </p>
-          <p className="mt-2 text-[13px] text-[#8B95A1]">
-            좌측에서 출장과 인원을 선택하면 복명서 입력폼이 표시됩니다.
-          </p>
+      <section className="flex h-full w-[70%] flex-1 flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        <header className="flex h-[56px] shrink-0 items-center border-b border-[#E2E8F0] px-4">
+          <h2 className="text-[15px] font-bold tracking-tight text-[#1E293B]">
+            출장비 데이터 입력폼
+          </h2>
+        </header>
+        <div className="flex flex-1 items-center justify-center px-6">
+          <div className="px-4 text-center">
+            <p className="text-[15px] font-bold text-[#1E293B]">
+              참여자를 선택해 주세요
+            </p>
+            <p className="mt-2 text-[13px] text-[#64748B]">
+              좌측에서 출장과 인원을 선택하면 복명서 입력폼이 표시됩니다.
+            </p>
+          </div>
         </div>
       </section>
     );
@@ -911,36 +920,33 @@ export function ReportFormPanel({
   };
 
   return (
-    <section className="flex h-full w-[70%] flex-1 flex-col bg-[#F2F4F6]">
-      <header className="flex items-center justify-between border-b border-[#E5E8EB] bg-white px-6 py-4">
-        <div>
-          <p className="text-[13px] font-semibold text-[#8B95A1]">
-            출장비 데이터 입력폼
-          </p>
-          <div className="mt-1 flex items-center gap-3">
-            <h2 className="text-xl font-bold tracking-tight text-[#191F28]">
-              <PersonNameLabel
-                name={participant.name}
-                resigned={
-                  !!participant.personId &&
-                  isResignedPerson(
-                    directoryPeople.find((p) => p.id === participant.personId),
-                  )
-                }
-              />
-            </h2>
-            <StatusBadge status={participant.status} />
-          </div>
-          <p className="mt-1 text-[13px] text-[#8B95A1]">
-            {participant.department}
-          </p>
+    <section className="flex h-full w-[70%] flex-1 flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <header className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
+            <PersonNameLabel
+              name={participant.name}
+              resigned={
+                !!participant.personId &&
+                isResignedPerson(
+                  directoryPeople.find((p) => p.id === participant.personId),
+                )
+              }
+            />
+          </h2>
+          {participant.department ? (
+            <span className="shrink-0 truncate text-[13px] font-medium text-[#64748B]">
+              {participant.department}
+            </span>
+          ) : null}
+          <StatusBadge status={participant.status} />
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[12px] font-semibold text-[#8B95A1]">
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] font-semibold text-[#64748B]">
               정렬
             </span>
-            <div className="flex rounded-xl bg-[#F2F4F6] p-1">
+            <div className="flex rounded-xl bg-[#F1F5F9] p-0.5">
               {(
                 [
                   { value: "left", label: "왼쪽" },
@@ -953,10 +959,10 @@ export function ReportFormPanel({
                     key={option.value}
                     type="button"
                     onClick={() => setFormAlign(option.value)}
-                    className={`rounded-lg px-3 py-1.5 text-[13px] font-bold transition-colors ${
+                    className={`rounded-lg px-2.5 py-1 text-[12px] font-bold transition-colors ${
                       selected
                         ? "bg-white text-[#3182F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
-                        : "text-[#8B95A1] hover:text-[#4E5968]"
+                        : "text-[#64748B] hover:text-[#64748B]"
                     }`}
                   >
                     {option.label}
@@ -965,7 +971,7 @@ export function ReportFormPanel({
               })}
             </div>
           </div>
-          <div className="relative flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               disabled={saving || copySources.length === 0}
@@ -978,15 +984,15 @@ export function ReportFormPanel({
                 setCopySourceId(null);
                 setCopyPickerOpen(true);
               }}
-              className="rounded-xl border border-[#E5E8EB] bg-white px-4 py-2.5 text-[14px] font-bold text-[#4E5968] transition-colors hover:border-[#3182F6] hover:bg-[#F2F8FF] hover:text-[#3182F6] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#E5E8EB] disabled:hover:bg-white disabled:hover:text-[#4E5968]"
+              className="rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:border-[#3182F6] hover:bg-[#F2F8FF] hover:text-[#3182F6] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#E2E8F0] disabled:hover:bg-white disabled:hover:text-[#64748B]"
             >
-              다른 참여자에서 불러오기
+              불러오기
             </button>
             <button
               type="button"
               disabled={saving}
               onClick={onDraftSave}
-              className="rounded-xl bg-[#F2F4F6] px-4 py-2.5 text-[14px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl bg-[#F1F5F9] px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {saving ? "저장 중…" : "임시 저장"}
             </button>
@@ -1001,26 +1007,52 @@ export function ReportFormPanel({
                     ? `미입력: ${missingRequiredLabels.join(", ")}`
                     : "필수값을 모두 입력해야 제출할 수 있습니다."
               }
-              className="rounded-xl bg-[#3182F6] px-4 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#B0B8C1] disabled:hover:bg-[#B0B8C1]"
+              className="rounded-xl bg-[#3182F6] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#B0B8C1] disabled:hover:bg-[#B0B8C1]"
             >
               제출
             </button>
-            {!canSubmit && missingRequiredLabels.length > 0 ? (
-              <p className="pointer-events-none absolute top-full right-0 mt-1.5 whitespace-nowrap text-right text-[11px] font-medium leading-4 text-[#8B95A1]">
-                미입력: {missingRequiredLabels.join(" · ")}
-              </p>
-            ) : null}
           </div>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      {!canSubmit && missingRequiredLabels.length > 0 ? (
+        <div className="shrink-0 border-b border-[#FED7AA] bg-[#FFF7ED] px-4 py-2 xl:hidden">
+          <p className="text-[12px] font-semibold text-[#C2410C]">
+            제출 전 미입력
+          </p>
+          <p className="mt-0.5 text-[12px] font-medium leading-5 text-[#9A3412]">
+            {missingRequiredLabels.join(" · ")}
+          </p>
+        </div>
+      ) : null}
+
+      <div className="flex-1 overflow-y-auto px-5 pb-4 pt-0">
         <div
           className={`flex w-full max-w-[1180px] items-start gap-6 ${
             formAlign === "center" ? "mx-auto" : "mr-auto"
           }`}
         >
-          <div className="min-w-0 flex-1 rounded-2xl border border-[#E5E8EB] bg-white px-5">
+          <div className="min-w-0 flex-1">
+            {tripName ? (
+              <div className="flex h-[60px] items-center gap-2.5 border-b border-[#E2E8F0]">
+                <span
+                  aria-hidden="true"
+                  className="h-5 w-1 shrink-0 rounded-full bg-[#3182F6]"
+                />
+                <h3 className="min-w-0 truncate text-[16px] font-bold tracking-tight text-[#1E293B]">
+                  {tripName}
+                </h3>
+                {(form.startDate && form.endDate) ||
+                (tripStartDate && tripEndDate) ? (
+                  <p className="shrink-0 text-[12px] font-medium text-[#64748B]">
+                    {formatDateRange(
+                      form.startDate || tripStartDate,
+                      form.endDate || tripEndDate,
+                    )}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <FormSection
               title="1. 지역 선택"
               description="관내(서울) 또는 관외를 선택합니다. 관내는 일비만 지원되며 식비·교통비·숙박비는 입력할 수 없습니다."
@@ -1109,11 +1141,11 @@ export function ReportFormPanel({
               description="출장 일정의 날짜별로 업무시작·마감을 선택하면 근무시간이 자동 계산됩니다. 평일은 08:00 이전 시작 시 시간외수당/조식 중 하나를 선택해 주세요. 주말·공휴일은 09:00 근무 포함 시 시간외수당과 조식 모두 지급 가능합니다."
             >
               {form.dailyHours.length === 0 ? (
-                <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
-                  <p className="text-[14px] font-semibold text-[#4E5968]">
+                <div className="rounded-xl bg-[#F8FAFC] px-4 py-8 text-center">
+                  <p className="text-[14px] font-semibold text-[#64748B]">
                     표시할 날짜가 없습니다
                   </p>
-                  <p className="mt-1 text-[12px] text-[#8B95A1]">
+                  <p className="mt-1 text-[12px] text-[#64748B]">
                     먼저 출장 일정의 시작일·종료일을 선택해 주세요
                   </p>
                 </div>
@@ -1143,17 +1175,17 @@ export function ReportFormPanel({
                     return (
                       <div
                         key={item.date}
-                        className="space-y-2 rounded-2xl bg-[#F9FAFB] p-3"
+                        className="space-y-2 rounded-2xl bg-[#F8FAFC] p-3"
                       >
                         <div className="grid items-start gap-3 sm:grid-cols-[112px_minmax(0,1fr)_minmax(0,1fr)_108px]">
                           <div>
-                            <p className="mb-1.5 text-center text-[12px] font-semibold text-[#8B95A1]">
+                            <p className="mb-1.5 text-center text-[12px] font-semibold text-[#64748B]">
                               날짜
                             </p>
                             <div
                               aria-readonly="true"
                               title="출장 일정에서 자동으로 채워진 날짜입니다"
-                              className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#6B7684]"
+                              className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#64748B]"
                             >
                               {formatDisplayDate(item.date)}
                             </div>
@@ -1183,7 +1215,7 @@ export function ReportFormPanel({
                             }}
                           />
                           <div>
-                            <p className="mb-1.5 text-center text-[12px] font-semibold text-[#8B95A1]">
+                            <p className="mb-1.5 text-center text-[12px] font-semibold text-[#64748B]">
                               업무시간
                             </p>
                             <div
@@ -1216,7 +1248,7 @@ export function ReportFormPanel({
                             <p className="text-[12px] font-semibold text-[#3182F6]">
                               주말·공휴일
                             </p>
-                            <p className="mt-1 text-[12px] leading-5 text-[#4E5968]">
+                            <p className="mt-1 text-[12px] leading-5 text-[#64748B]">
                               시간외수당과 조식 모두 지급 가능합니다. (조식은
                               09:00 근무 포함 시 자동 반영)
                             </p>
@@ -1270,7 +1302,7 @@ export function ReportFormPanel({
                                       }}
                                       className="h-4 w-4 accent-[#3182F6]"
                                     />
-                                    <span className="text-[13px] font-semibold text-[#4E5968]">
+                                    <span className="text-[13px] font-semibold text-[#64748B]">
                                       {option.label}
                                     </span>
                                   </label>
@@ -1292,13 +1324,13 @@ export function ReportFormPanel({
               disabled={localUnsupported}
               disabledMessage="관내(서울) 출장은 식비가 지원되지 않아 사업추진비를 입력하지 않습니다."
             >
-              <details className="group mb-3 rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 py-2.5 text-[12px] leading-5 text-[#6B7684] open:pb-3">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-[#4E5968] [&::-webkit-details-marker]:hidden">
+              <details className="group mb-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5 text-[12px] leading-5 text-[#64748B] open:pb-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 font-semibold text-[#64748B] [&::-webkit-details-marker]:hidden">
                   <span>선택 가능 기준 보기</span>
-                  <span className="text-[11px] font-medium text-[#8B95A1] group-open:hidden">
+                  <span className="text-[11px] font-medium text-[#64748B] group-open:hidden">
                     펼치기
                   </span>
-                  <span className="hidden text-[11px] font-medium text-[#8B95A1] group-open:inline">
+                  <span className="hidden text-[11px] font-medium text-[#64748B] group-open:inline">
                     접기
                   </span>
                 </summary>
@@ -1312,11 +1344,11 @@ export function ReportFormPanel({
                 </p>
               </details>
               {form.dailyMeals.length === 0 ? (
-                <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
-                  <p className="text-[14px] font-semibold text-[#4E5968]">
+                <div className="rounded-xl bg-[#F8FAFC] px-4 py-8 text-center">
+                  <p className="text-[14px] font-semibold text-[#64748B]">
                     표시할 날짜가 없습니다
                   </p>
-                  <p className="mt-1 text-[12px] text-[#8B95A1]">
+                  <p className="mt-1 text-[12px] text-[#64748B]">
                     먼저 출장 일정의 시작일·종료일을 선택해 주세요
                   </p>
                 </div>
@@ -1331,12 +1363,12 @@ export function ReportFormPanel({
                     return (
                       <div
                         key={item.date}
-                        className="grid items-center gap-3 rounded-2xl bg-[#F9FAFB] p-3 sm:grid-cols-[112px_minmax(0,1fr)]"
+                        className="grid items-center gap-3 rounded-2xl bg-[#F8FAFC] p-3 sm:grid-cols-[112px_minmax(0,1fr)]"
                       >
                         <div
                           aria-readonly="true"
                           title="출장 일정에서 자동으로 채워진 날짜입니다"
-                          className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#6B7684]"
+                          className="flex h-11 select-none items-center justify-center rounded-xl bg-[#EEF0F3] px-3 text-center text-[13px] font-semibold tabular-nums text-[#64748B]"
                         >
                           {formatDisplayDate(item.date)}
                         </div>
@@ -1379,7 +1411,7 @@ export function ReportFormPanel({
                                 />
                                 <span
                                   className={`text-[14px] font-semibold ${
-                                    enabled ? "text-[#4E5968]" : "text-[#8B95A1]"
+                                    enabled ? "text-[#64748B]" : "text-[#64748B]"
                                   }`}
                                 >
                                   {option.label}
@@ -1473,7 +1505,7 @@ export function ReportFormPanel({
                                 updateTransportPeople(item, nextIds)
                               }
                             />
-                            <p className="text-[12px] leading-5 text-[#6B7684]">
+                            <p className="text-[12px] leading-5 text-[#64748B]">
                               렌트 탑승 인원(작성자 포함)은 일비가 반액으로
                               계산됩니다.
                             </p>
@@ -1485,11 +1517,11 @@ export function ReportFormPanel({
                 })}
 
                 {transportItems.length === 0 ? (
-                  <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
-                    <p className="text-[14px] font-semibold text-[#4E5968]">
+                  <div className="rounded-xl bg-[#F8FAFC] px-4 py-8 text-center">
+                    <p className="text-[14px] font-semibold text-[#64748B]">
                       등록된 교통비가 없습니다
                     </p>
-                    <p className="mt-1 text-[12px] text-[#8B95A1]">
+                    <p className="mt-1 text-[12px] text-[#64748B]">
                       아래 버튼으로 항목을 추가해 주세요
                     </p>
                   </div>
@@ -1517,7 +1549,7 @@ export function ReportFormPanel({
                     <span className="text-[13px] font-semibold text-[#3182F6]">
                       교통비 합계
                     </span>
-                    <span className="text-right text-[15px] font-bold tabular-nums text-[#191F28]">
+                    <span className="text-right text-[15px] font-bold tabular-nums text-[#1E293B]">
                       {formatCurrency(transportTotal)}원
                     </span>
                   </div>
@@ -1551,11 +1583,11 @@ export function ReportFormPanel({
                 ))}
 
                 {lodgingItems.length === 0 ? (
-                  <div className="rounded-xl bg-[#F9FAFB] px-4 py-8 text-center">
-                    <p className="text-[14px] font-semibold text-[#4E5968]">
+                  <div className="rounded-xl bg-[#F8FAFC] px-4 py-8 text-center">
+                    <p className="text-[14px] font-semibold text-[#64748B]">
                       등록된 숙박비가 없습니다
                     </p>
-                    <p className="mt-1 text-[12px] text-[#8B95A1]">
+                    <p className="mt-1 text-[12px] text-[#64748B]">
                       아래 버튼으로 항목을 추가해 주세요
                     </p>
                   </div>
@@ -1580,7 +1612,7 @@ export function ReportFormPanel({
                     <span className="text-[13px] font-semibold text-[#3182F6]">
                       숙박비 합계
                     </span>
-                    <span className="text-right text-[15px] font-bold tabular-nums text-[#191F28]">
+                    <span className="text-right text-[15px] font-bold tabular-nums text-[#1E293B]">
                       {formatCurrency(lodgingTotal)}원
                     </span>
                   </div>
@@ -1589,12 +1621,16 @@ export function ReportFormPanel({
             </FormSection>
           </div>
 
-          <aside className="sticky top-0 hidden w-[260px] shrink-0 xl:block">
-            <div className="rounded-2xl border border-[#E5E8EB] bg-white p-5">
-              <p className="text-[13px] font-semibold text-[#8B95A1]">
+          <aside
+            className={`sticky top-0 hidden w-[260px] shrink-0 xl:block ${
+              tripName ? "mt-[60px]" : ""
+            }`}
+          >
+            <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <p className="text-[13px] font-semibold text-[#64748B]">
                 입력 요약
               </p>
-              <h3 className="mt-1 text-[16px] font-bold text-[#191F28]">
+              <h3 className="mt-1 text-[16px] font-bold text-[#1E293B]">
                 <PersonNameLabel
                   name={participant.name}
                   resigned={
@@ -1606,7 +1642,7 @@ export function ReportFormPanel({
                 />
               </h3>
 
-              <div className="mt-4 divide-y divide-[#F2F4F6]">
+              <div className="mt-4 divide-y divide-[#E2E8F0]">
                 <SummaryRow
                   label="작성 상태"
                   value={participant.status}
@@ -1667,11 +1703,22 @@ export function ReportFormPanel({
                 />
               </div>
 
+              {!canSubmit && missingRequiredLabels.length > 0 ? (
+                <div className="mt-4 rounded-xl bg-[#FFF7ED] px-3.5 py-3">
+                  <p className="text-[12px] font-semibold text-[#C2410C]">
+                    제출 전 미입력
+                  </p>
+                  <p className="mt-1 text-[12px] font-medium leading-5 text-[#9A3412]">
+                    {missingRequiredLabels.join(" · ")}
+                  </p>
+                </div>
+              ) : null}
+
               <div className="mt-4 rounded-xl bg-[#F2F8FF] px-3.5 py-3">
                 <p className="text-[12px] font-semibold text-[#3182F6]">
                   비용 합계
                 </p>
-                <p className="mt-1 text-right text-[20px] font-bold tracking-tight tabular-nums text-[#191F28]">
+                <p className="mt-1 text-right text-[20px] font-bold tracking-tight tabular-nums text-[#1E293B]">
                   {formatCurrency(totalCost)}원
                 </p>
               </div>
@@ -1683,12 +1730,12 @@ export function ReportFormPanel({
       {costDeleteTarget ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[360px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <h3 className="text-[17px] font-bold text-[#191F28]">
+            <h3 className="text-[17px] font-bold text-[#1E293B]">
               {costDeleteTarget.type === "transport"
                 ? "교통비 항목을 삭제할까요?"
                 : "숙박비 항목을 삭제할까요?"}
             </h3>
-            <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
+            <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
               입력한 내용이 함께 삭제됩니다.
             </p>
             <div className="mt-6 grid grid-cols-2 gap-2">
@@ -1709,7 +1756,7 @@ export function ReportFormPanel({
               <button
                 type="button"
                 onClick={() => setCostDeleteTarget(null)}
-                className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] hover:bg-[#E5E8EB]"
+                className="rounded-xl bg-[#F1F5F9] px-4 py-3 text-[14px] font-bold text-[#64748B] hover:bg-[#E2E8F0]"
               >
                 취소
               </button>
@@ -1721,22 +1768,22 @@ export function ReportFormPanel({
       {copyPickerOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="flex max-h-[80vh] w-full max-w-[440px] flex-col rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <h3 className="text-[17px] font-bold text-[#191F28]">
+            <h3 className="text-[17px] font-bold text-[#1E293B]">
               다른 참여자에서 불러오기
             </h3>
-            <p className="mt-1 text-[13px] leading-5 text-[#8B95A1]">
+            <p className="mt-1 text-[13px] leading-5 text-[#64748B]">
               같은 출장에서 이미 작성된 참여자를 선택합니다. 불러오면 현재
               입력값이 덮어씌워집니다.
             </p>
 
-            <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-[#E5E8EB] p-2">
+            <div className="mt-4 min-h-0 flex-1 space-y-1 overflow-y-auto rounded-xl border border-[#E2E8F0] p-2">
               {copySources.map((source) => {
                 const selected = source.id === copySourceId;
                 return (
                   <label
                     key={source.id}
                     className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
-                      selected ? "bg-[#F2F8FF]" : "hover:bg-[#F9FAFB]"
+                      selected ? "bg-[#F2F8FF]" : "hover:bg-[#F8FAFC]"
                     }`}
                   >
                     <input
@@ -1758,11 +1805,11 @@ export function ReportFormPanel({
                               ),
                             )
                           }
-                          className="text-[14px] font-semibold text-[#191F28]"
+                          className="text-[14px] font-semibold text-[#1E293B]"
                         />
                         <StatusBadge status={source.status} />
                       </div>
-                      <p className="mt-0.5 text-[12px] text-[#8B95A1]">
+                      <p className="mt-0.5 text-[12px] text-[#64748B]">
                         {source.department}
                       </p>
                     </div>
@@ -1798,7 +1845,7 @@ export function ReportFormPanel({
                   setCopyPickerOpen(false);
                   setCopySourceId(null);
                 }}
-                className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+                className="rounded-xl bg-[#F1F5F9] px-4 py-3 text-[14px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0]"
               >
                 취소
               </button>

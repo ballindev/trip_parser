@@ -117,10 +117,10 @@ export function TimePicker({
         className={`flex h-11 w-full items-center justify-center gap-1 rounded-xl border px-3 text-[14px] font-semibold tabular-nums outline-none transition ${
           open
             ? "border-[#3182F6] bg-white ring-2 ring-[#3182F6]/15"
-            : "border-[#E5E8EB] bg-[#F9FAFB] hover:bg-white"
+            : "border-gray-300 bg-white hover:bg-white"
         }`}
       >
-        <span className={parsed ? "text-[#191F28]" : "text-[#8B95A1]"}>
+        <span className={parsed ? "text-[#1E293B]" : "text-[#64748B]"}>
           {parsed ? `${parsed.hour}:${parsed.minute}` : placeholder}
         </span>
       </button>

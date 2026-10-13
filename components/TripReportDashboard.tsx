@@ -5,10 +5,6 @@ import { AttachmentPreviewDialog } from "@/components/AttachmentPreviewDialog";
 import { DirectoryManageView } from "@/components/DirectoryManageView";
 import { ParticipantListPanel } from "@/components/ParticipantListPanel";
 import { ParticipantPickerDialog } from "@/components/ParticipantPickerDialog";
-import {
-  PersonNameLabel,
-  isResignedPerson,
-} from "@/components/PersonNameLabel";
 import { ReportFormPanel } from "@/components/ReportFormPanel";
 import type { TripFormValues } from "@/components/TripFormDialog";
 import { TripListPanel } from "@/components/TripListPanel";
@@ -16,10 +12,7 @@ import { api } from "@/lib/api/client";
 import { isReportReadyToSubmit } from "@/lib/report-validation";
 import type { Person, ReportForm, Team, Trip, WriteStatus } from "@/lib/types";
 
-type AppTab = "trips" | "directory";
-
 export function TripReportDashboard() {
-  const [appTab, setAppTab] = useState<AppTab>("trips");
   const [trips, setTrips] = useState<Trip[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -27,6 +20,7 @@ export function TripReportDashboard() {
   const [selectedParticipantId, setSelectedParticipantId] = useState("");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -264,7 +258,6 @@ export function TripReportDashboard() {
       }),
     );
 
-    setSaving(true);
     setError("");
     try {
       await api.reorderParticipants(selectedTrip.id, orderedIds);
@@ -276,8 +269,6 @@ export function TripReportDashboard() {
         }),
       );
       setError(err instanceof Error ? err.message : "참여자 순서 변경 실패");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -344,8 +335,8 @@ export function TripReportDashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#F2F4F6]">
-        <p className="text-[14px] font-semibold text-[#8B95A1]">
+      <div className="flex h-screen items-center justify-center bg-[#F8FAFC]">
+        <p className="text-[14px] font-semibold text-[#64748B]">
           데이터를 불러오는 중…
         </p>
       </div>
@@ -353,77 +344,35 @@ export function TripReportDashboard() {
   }
 
   return (
-    <div className="flex h-screen min-w-[1280px] flex-col bg-[#F2F4F6]">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E8EB] bg-white px-6">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-[13px] font-bold text-white">
-              TR
-            </div>
-            <div>
-              <h1 className="text-[16px] font-bold tracking-tight text-[#191F28]">
-                출장비 데이터 취합 대시보드
-              </h1>
-              <p className="text-[12px] text-[#8B95A1]">
-                PC 브라우저 전용
-                {saving ? " · 저장 중…" : ""}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex rounded-xl bg-[#F2F4F6] p-1">
-            {(
-              [
-                { value: "trips", label: "출장 취합" },
-                { value: "directory", label: "팀/인원 관리" },
-              ] as const
-            ).map((option) => {
-              const selected = appTab === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setAppTab(option.value)}
-                  className={`rounded-lg px-4 py-1.5 text-[13px] font-bold transition-colors ${
-                    selected
-                      ? "bg-white text-[#3182F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
-                      : "text-[#8B95A1] hover:text-[#4E5968]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
+    <div className="flex h-screen min-w-[1280px] flex-col bg-[#F8FAFC]">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E2E8F0] bg-white px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          <img
+            src="/logo-sspe.png"
+            alt="학교체육진흥회"
+            className="h-9 w-auto shrink-0"
+          />
+          <span
+            aria-hidden="true"
+            className="h-4 w-px shrink-0 bg-[#E2E8F0]"
+          />
+          <div className="min-w-0">
+            <h1 className="truncate text-[16px] font-bold tracking-tight text-[#1E293B]">
+              출장 관리 & 붙임 자료 생성
+            </h1>
+            {saving ? (
+              <p className="text-[12px] text-[#64748B]">저장 중…</p>
+            ) : null}
           </div>
         </div>
 
-        <p className="text-[13px] font-medium text-[#8B95A1]">
-          {appTab === "directory" ? (
-            `등록: 사람 ${people.filter((p) => !isResignedPerson(p)).length}명 · 팀 ${teams.length}개`
-          ) : selectedTrip ? (
-            <>
-              선택: {selectedTrip.name}
-              {selectedParticipant ? (
-                <>
-                  {" · "}
-                  <PersonNameLabel
-                    name={selectedParticipant.name}
-                    resigned={
-                      !!selectedParticipant.personId &&
-                      isResignedPerson(
-                        people.find(
-                          (p) => p.id === selectedParticipant.personId,
-                        ),
-                      )
-                    }
-                  />
-                </>
-              ) : null}
-            </>
-          ) : (
-            "선택된 출장이 없습니다"
-          )}
-        </p>
+        <button
+          type="button"
+          onClick={() => setDirectoryOpen(true)}
+          className="shrink-0 rounded-xl bg-[#F1F5F9] px-3.5 py-2 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0] hover:text-[#1E293B]"
+        >
+          팀/인원 관리
+        </button>
       </header>
 
       {error ? (
@@ -432,192 +381,275 @@ export function TripReportDashboard() {
         </div>
       ) : null}
 
-      {appTab === "directory" ? (
-        <DirectoryManageView
-          people={people}
-          teams={teams}
-          onAddPerson={async (person, teamId) => {
-            try {
-              const created = await api.createPerson({
-                ...person,
-                teamId,
-              });
-              setPeople((prev) => [...prev, created]);
-              setTeams((prev) =>
-                prev.map((team) => {
-                  if (team.id !== teamId) return team;
-                  if (team.memberIds.includes(created.id)) return team;
-                  return {
-                    ...team,
-                    memberIds: [...team.memberIds, created.id],
-                  };
-                }),
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "인원 추가 실패");
-            }
-          }}
-          onUpdatePerson={async (personId, next, teamId) => {
-            try {
-              const updated = await api.updatePerson(personId, {
-                name: next.name,
-                rank: next.rank,
-                department: next.department,
-                employmentStatus: next.employmentStatus,
-                teamId,
-              });
-              setPeople((prev) =>
-                prev.map((person) =>
-                  person.id === personId ? updated : person,
-                ),
-              );
-              setTeams((prev) =>
-                prev.map((team) => {
-                  const withoutPerson = team.memberIds.filter(
-                    (id) => id !== personId,
-                  );
-                  if (team.id === teamId) {
-                    return {
-                      ...team,
-                      memberIds: withoutPerson.includes(personId)
-                        ? withoutPerson
-                        : [...withoutPerson, personId],
-                    };
-                  }
-                  return { ...team, memberIds: withoutPerson };
-                }),
-              );
-              setTrips((prev) =>
-                prev.map((trip) => ({
-                  ...trip,
-                  participants: trip.participants.map((participant) =>
-                    participant.personId === personId
-                      ? {
-                          ...participant,
-                          name: updated.name,
-                          department: updated.department,
-                        }
-                      : participant,
-                  ),
-                })),
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "인원 수정 실패");
-            }
-          }}
-          onDeletePerson={async (personId) => {
-            try {
-              await api.deletePerson(personId);
-              setPeople((prev) =>
-                prev.filter((person) => person.id !== personId),
-              );
-              setTeams((prev) =>
-                prev.map((team) => ({
-                  ...team,
-                  memberIds: team.memberIds.filter((id) => id !== personId),
-                })),
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "인원 삭제 실패");
-            }
-          }}
-          onAddTeam={async (team) => {
-            try {
-              const created = await api.createTeam({
-                name: team.name,
-                memberIds: team.memberIds,
-              });
-              setTeams((prev) => [...prev, created]);
-              return created;
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "팀 추가 실패");
-            }
-          }}
-          onUpdateTeam={async (teamId, next) => {
-            try {
-              const updated = await api.updateTeam(teamId, {
-                name: next.name,
-                memberIds: next.memberIds,
-              });
-              setTeams((prev) =>
-                prev.map((team) => (team.id === teamId ? updated : team)),
-              );
-              setPeople((prev) =>
-                prev.map((person) =>
-                  next.memberIds.includes(person.id)
-                    ? { ...person, department: next.name }
-                    : person,
-                ),
-              );
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "팀 수정 실패");
-            }
-          }}
-          onDeleteTeam={async (teamId) => {
-            try {
-              await api.deleteTeam(teamId);
-              setTeams((prev) => prev.filter((team) => team.id !== teamId));
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "팀 삭제 실패");
-            }
-          }}
+      <main className="flex min-h-0 flex-1 gap-3 p-3">
+        <TripListPanel
+          trips={trips}
+          selectedTripId={selectedTripId}
+          onSelectTrip={handleSelectTrip}
+          onAddTrip={handleAddTrip}
+          onUpdateTrip={handleUpdateTrip}
+          onDeleteTrip={handleDeleteTrip}
+          onOpenAttachment={() => setIsAttachmentOpen(true)}
         />
-      ) : (
-        <main className="flex min-h-0 flex-1">
-          <TripListPanel
-            trips={trips}
-            selectedTripId={selectedTripId}
-            onSelectTrip={handleSelectTrip}
-            onAddTrip={handleAddTrip}
-            onUpdateTrip={handleUpdateTrip}
-            onDeleteTrip={handleDeleteTrip}
-            onOpenAttachment={() => setIsAttachmentOpen(true)}
+        {selectedTrip ? (
+          <ParticipantListPanel
+            participants={selectedTrip.participants}
+            people={people}
+            selectedParticipantId={selectedParticipantId}
+            onSelectParticipant={handleSelectParticipant}
+            onAddParticipant={handleOpenParticipantPicker}
+            onDeleteParticipant={handleDeleteParticipant}
+            onReorderParticipants={handleReorderParticipants}
           />
-          {selectedTrip ? (
-            <ParticipantListPanel
-              participants={selectedTrip.participants}
-              people={people}
-              selectedParticipantId={selectedParticipantId}
-              onSelectParticipant={handleSelectParticipant}
-              onAddParticipant={handleOpenParticipantPicker}
-              onDeleteParticipant={handleDeleteParticipant}
-              onReorderParticipants={handleReorderParticipants}
-            />
-          ) : (
-            <aside className="flex h-full w-[10%] min-w-[140px] flex-col border-r border-[#E5E8EB] bg-white">
-              <header className="flex h-[56px] shrink-0 items-center border-b border-[#E5E8EB] px-3">
-                <h2 className="truncate text-[15px] font-bold tracking-tight text-[#191F28]">
-                  참여자
-                </h2>
-              </header>
-              <div className="h-[60px] shrink-0 px-3 py-3">
-                <div className="flex h-full items-center justify-center rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3">
-                  <p className="text-[13px] font-semibold text-[#8B95A1]">
-                    인원 0명
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-1 items-center justify-center px-3 text-center">
-                <p className="text-[12px] leading-5 text-[#8B95A1]">
-                  출장을 선택해 주세요
+        ) : (
+          <aside className="flex h-full w-[10%] min-w-[140px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+            <header className="flex h-[56px] shrink-0 items-center border-b border-[#E2E8F0] px-3">
+              <h2 className="truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
+                참여자
+              </h2>
+            </header>
+            <div className="h-[60px] shrink-0 px-3 py-3">
+              <div className="flex h-full items-center justify-center rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
+                <p className="text-[13px] font-semibold text-[#64748B]">
+                  인원 0명
                 </p>
               </div>
-            </aside>
-          )}
-          <ReportFormPanel
-            participant={selectedParticipant}
-            form={selectedParticipant?.form ?? null}
-            directoryPeople={people}
-            tripParticipants={selectedTrip?.participants ?? []}
-            tripStartDate={selectedTrip?.startDate ?? ""}
-            tripEndDate={selectedTrip?.endDate ?? ""}
-            saving={saving}
-            onChange={handleFormChange}
-            onDraftSave={handleDraftSave}
-            onSubmit={handleSubmit}
-          />
-        </main>
-      )}
+            </div>
+            <div className="flex flex-1 items-center justify-center px-3 text-center">
+              <p className="text-[12px] leading-5 text-[#64748B]">
+                출장을 선택해 주세요
+              </p>
+            </div>
+          </aside>
+        )}
+        <ReportFormPanel
+          participant={selectedParticipant}
+          form={selectedParticipant?.form ?? null}
+          directoryPeople={people}
+          tripParticipants={selectedTrip?.participants ?? []}
+          tripName={selectedTrip?.name ?? ""}
+          tripStartDate={selectedTrip?.startDate ?? ""}
+          tripEndDate={selectedTrip?.endDate ?? ""}
+          saving={saving}
+          onChange={handleFormChange}
+          onDraftSave={handleDraftSave}
+          onSubmit={handleSubmit}
+        />
+      </main>
+
+      {directoryOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="directory-modal-title"
+            className="flex h-[min(720px,90vh)] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+          >
+            <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] bg-white px-5">
+              <div className="flex min-w-0 items-baseline gap-2.5">
+                <h2
+                  id="directory-modal-title"
+                  className="shrink-0 text-[16px] font-bold text-[#1E293B]"
+                >
+                  팀/인원 관리
+                </h2>
+                <p className="truncate text-[12px] text-[#64748B]">
+                  팀과 팀원을 관리하고 출장비 누적 현황을 확인할 수 있습니다.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDirectoryOpen(false)}
+                className="shrink-0 rounded-xl bg-[#F1F5F9] px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0]"
+              >
+                닫기
+              </button>
+            </header>
+            <DirectoryManageView
+              embedded
+              people={people}
+              teams={teams}
+              trips={trips}
+              onRequestClose={() => setDirectoryOpen(false)}
+              onAddPerson={async (person, teamId) => {
+                try {
+                  const created = await api.createPerson({
+                    ...person,
+                    teamId,
+                  });
+                  setPeople((prev) => [...prev, created]);
+                  setTeams((prev) =>
+                    prev.map((team) => {
+                      if (team.id !== teamId) return team;
+                      if (team.memberIds.includes(created.id)) return team;
+                      return {
+                        ...team,
+                        memberIds: [...team.memberIds, created.id],
+                      };
+                    }),
+                  );
+                } catch (err) {
+                  setError(
+                    err instanceof Error ? err.message : "인원 추가 실패",
+                  );
+                }
+              }}
+              onUpdatePerson={async (personId, next, teamId) => {
+                try {
+                  const updated = await api.updatePerson(personId, {
+                    name: next.name,
+                    rank: next.rank,
+                    department: next.department,
+                    employmentStatus: next.employmentStatus,
+                    teamId,
+                  });
+                  setPeople((prev) =>
+                    prev.map((person) =>
+                      person.id === personId ? updated : person,
+                    ),
+                  );
+                  setTeams((prev) =>
+                    prev.map((team) => {
+                      const withoutPerson = team.memberIds.filter(
+                        (id) => id !== personId,
+                      );
+                      if (team.id === teamId) {
+                        return {
+                          ...team,
+                          memberIds: withoutPerson.includes(personId)
+                            ? withoutPerson
+                            : [...withoutPerson, personId],
+                        };
+                      }
+                      return { ...team, memberIds: withoutPerson };
+                    }),
+                  );
+                  setTrips((prev) =>
+                    prev.map((trip) => ({
+                      ...trip,
+                      participants: trip.participants.map((participant) =>
+                        participant.personId === personId
+                          ? {
+                              ...participant,
+                              name: updated.name,
+                              department: updated.department,
+                            }
+                          : participant,
+                      ),
+                    })),
+                  );
+                } catch (err) {
+                  setError(
+                    err instanceof Error ? err.message : "인원 수정 실패",
+                  );
+                }
+              }}
+              onDeletePerson={async (personId) => {
+                try {
+                  await api.deletePerson(personId);
+                  setPeople((prev) =>
+                    prev.filter((person) => person.id !== personId),
+                  );
+                  setTeams((prev) =>
+                    prev.map((team) => ({
+                      ...team,
+                      memberIds: team.memberIds.filter((id) => id !== personId),
+                    })),
+                  );
+                } catch (err) {
+                  setError(
+                    err instanceof Error ? err.message : "인원 삭제 실패",
+                  );
+                }
+              }}
+              onAddTeam={async (team) => {
+                try {
+                  const created = await api.createTeam({
+                    name: team.name,
+                    memberIds: team.memberIds,
+                  });
+                  setTeams((prev) => [...prev, created]);
+                  return created;
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "팀 추가 실패");
+                }
+              }}
+              onUpdateTeam={async (teamId, next) => {
+                try {
+                  const updated = await api.updateTeam(teamId, {
+                    name: next.name,
+                    memberIds: next.memberIds,
+                  });
+                  setTeams((prev) =>
+                    prev.map((team) => (team.id === teamId ? updated : team)),
+                  );
+                  setPeople((prev) =>
+                    prev.map((person) =>
+                      next.memberIds.includes(person.id)
+                        ? { ...person, department: next.name }
+                        : person,
+                    ),
+                  );
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "팀 수정 실패");
+                }
+              }}
+              onReorderTeams={async (orderedIds) => {
+                const previous = teams;
+                setTeams((prev) => {
+                  const byId = new Map(prev.map((team) => [team.id, team]));
+                  return orderedIds
+                    .map((id) => byId.get(id))
+                    .filter((team): team is (typeof prev)[number] =>
+                      Boolean(team),
+                    );
+                });
+                try {
+                  await api.reorderTeams(orderedIds);
+                } catch (err) {
+                  setTeams(previous);
+                  setError(
+                    err instanceof Error ? err.message : "팀 순서 변경 실패",
+                  );
+                }
+              }}
+              onReorderTeamMembers={async (teamId, orderedMemberIds) => {
+                const previous = teams;
+                setTeams((prev) =>
+                  prev.map((team) =>
+                    team.id === teamId
+                      ? { ...team, memberIds: orderedMemberIds }
+                      : team,
+                  ),
+                );
+                try {
+                  const target = previous.find((team) => team.id === teamId);
+                  if (!target) return;
+                  await api.updateTeam(teamId, {
+                    name: target.name,
+                    memberIds: orderedMemberIds,
+                  });
+                } catch (err) {
+                  setTeams(previous);
+                  setError(
+                    err instanceof Error ? err.message : "팀원 순서 변경 실패",
+                  );
+                }
+              }}
+              onDeleteTeam={async (teamId) => {
+                try {
+                  await api.deleteTeam(teamId);
+                  setTeams((prev) =>
+                    prev.filter((team) => team.id !== teamId),
+                  );
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "팀 삭제 실패");
+                }
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {isPickerOpen ? (
         <ParticipantPickerDialog

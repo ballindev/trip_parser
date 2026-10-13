@@ -134,7 +134,7 @@ export function DatePicker({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 py-2.5 text-left text-[14px] text-[#191F28] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
+        className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-left text-[14px] text-[#1E293B] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
       >
         <span className={`min-w-0 truncate ${value ? "font-medium" : "text-[#8B95A1]"}`}>
           {value ? formatDisplayDate(value) : placeholder}

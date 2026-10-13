@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "출장비 데이터 취합 대시보드",
-  description: "PC 브라우저 전용 출장비 데이터 취합 대시보드",
+  title: "출장 관리 & 붙임 자료 생성",
+  description: "PC 브라우저 전용 출장 관리 및 붙임 자료 생성",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -42,9 +42,22 @@ export async function POST(request: Request) {
     if (error) return jsonError(error.message, 500);
 
     if (body.teamId) {
+      const { data: maxMember } = await supabase
+        .from("team_members")
+        .select("sort_order")
+        .eq("team_id", body.teamId)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextMemberOrder =
+        typeof maxMember?.sort_order === "number"
+          ? maxMember.sort_order + 1
+          : 0;
+
       const { error: memberError } = await supabase.from("team_members").insert({
         team_id: body.teamId,
         person_id: data.id,
+        sort_order: nextMemberOrder,
       });
       if (memberError) return jsonError(memberError.message, 500);
     }

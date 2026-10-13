@@ -23,9 +23,10 @@ export async function PATCH(request: Request, { params }: Params) {
       await supabase.from("team_members").delete().eq("team_id", id);
       if (body.memberIds.length > 0) {
         const { error } = await supabase.from("team_members").insert(
-          body.memberIds.map((personId) => ({
+          body.memberIds.map((personId, index) => ({
             team_id: id,
             person_id: personId,
+            sort_order: index,
           })),
         );
         if (error) return jsonError(error.message, 500);
@@ -43,7 +44,11 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const [teamRes, membersRes] = await Promise.all([
       supabase.from("teams").select("*").eq("id", id).single(),
-      supabase.from("team_members").select("person_id").eq("team_id", id),
+      supabase
+        .from("team_members")
+        .select("person_id")
+        .eq("team_id", id)
+        .order("sort_order", { ascending: true }),
     ]);
 
     if (teamRes.error) return jsonError(teamRes.error.message, 500);

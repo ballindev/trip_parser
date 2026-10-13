@@ -1,16 +1,39 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
-  PersonNameLabel,
-  isResignedPerson,
-} from "@/components/PersonNameLabel";
-import type { EmploymentStatus, Person, Team } from "@/lib/types";
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { isResignedPerson } from "@/components/PersonNameLabel";
+import { PersonExpensePanel } from "@/components/PersonExpensePanel";
+import {
+  RowDeleteButton,
+  RowEditButton,
+} from "@/components/RowActionIcons";
+import type { EmploymentStatus, Person, Team, Trip } from "@/lib/types";
 import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 
 type DirectoryManageViewProps = {
   people: Person[];
   teams: Team[];
+  trips: Trip[];
+  /** 모달 등 임베드 시 페이지형 타이틀/여백을 줄입니다. */
+  embedded?: boolean;
+  onRequestClose?: () => void;
   onAddPerson: (person: Omit<Person, "id">, teamId: string) => void;
   onUpdatePerson: (
     personId: string,
@@ -20,8 +43,27 @@ type DirectoryManageViewProps = {
   onDeletePerson: (personId: string) => void;
   onAddTeam: (team: Omit<Team, "id">) => void | Promise<Team | void>;
   onUpdateTeam: (teamId: string, team: Omit<Team, "id">) => void;
+  onReorderTeams: (orderedIds: string[]) => void;
+  onReorderTeamMembers: (teamId: string, orderedMemberIds: string[]) => void;
   onDeleteTeam: (teamId: string) => void;
 };
+
+/** visible 목록 안에서 순서를 바꾼 뒤, 숨겨진 id는 원래 자리에 유지합니다. */
+function reorderVisibleWithinFull(
+  fullIds: string[],
+  visibleIds: string[],
+  activeId: string,
+  overId: string,
+): string[] {
+  const oldIndex = visibleIds.indexOf(activeId);
+  const newIndex = visibleIds.indexOf(overId);
+  if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return fullIds;
+  const nextVisible = arrayMove(visibleIds, oldIndex, newIndex);
+  let cursor = 0;
+  return fullIds.map((id) =>
+    visibleIds.includes(id) ? nextVisible[cursor++]! : id,
+  );
+}
 
 function resolvePersonTeamId(personId: string, teams: Team[]): string {
   return teams.find((team) => team.memberIds.includes(personId))?.id ?? "";
@@ -40,53 +82,193 @@ function countActiveMembers(
 const inputClassName =
   "w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 py-2.5 text-[14px] text-[#191F28] outline-none transition focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15";
 
-function IconButton({
-  label,
-  onClick,
-  disabled,
-  variant = "default",
-  children,
+function TeamRowActions({
+  onEdit,
+  onDelete,
 }: {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-  variant?: "default" | "primary";
-  children: ReactNode;
+  onEdit: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      disabled={disabled}
-      className={`flex h-8 w-8 items-center justify-center rounded-xl text-lg font-bold leading-none transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-        variant === "primary"
-          ? "bg-[#3182F6] text-white hover:bg-[#1B64DA] disabled:hover:bg-[#3182F6]"
-          : "bg-[#F2F4F6] text-[#4E5968] hover:bg-[#FFE5E7] hover:text-[#F04452] disabled:hover:bg-[#F2F4F6] disabled:hover:text-[#4E5968]"
+    <div className="absolute top-1/2 right-1.5 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+      <RowEditButton label="팀 수정" onClick={onEdit} />
+      <RowDeleteButton label="팀 삭제" onClick={onDelete} />
+    </div>
+  );
+}
+
+function SortableTeamCard({
+  team,
+  selected,
+  memberCount,
+  disabled,
+  onSelect,
+  onEdit,
+  onDelete,
+}: {
+  team: Team;
+  selected: boolean;
+  memberCount: number;
+  disabled: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: team.id, disabled });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`group relative overflow-hidden rounded-xl border ${
+        isDragging
+          ? "z-10 border-dashed border-[#B0B8C1] bg-[#F0F1F3] opacity-40"
+          : selected
+            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+            : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
       }`}
     >
-      {children}
-    </button>
+      {selected && !isDragging ? (
+        <span
+          aria-hidden="true"
+          className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={onSelect}
+        onDoubleClick={onEdit}
+        className={`w-full py-3 pr-16 pl-3 text-left ${
+          disabled
+            ? "cursor-pointer"
+            : "cursor-grab touch-none active:cursor-grabbing"
+        }`}
+        {...attributes}
+        {...(disabled ? {} : listeners)}
+      >
+        <p className="truncate text-[14px] font-bold text-[#191F28]">
+          {team.name}{" "}
+          <span className="font-medium text-[#8B95A1]">({memberCount}명)</span>
+        </p>
+      </button>
+      {!isDragging ? (
+        <TeamRowActions onEdit={onEdit} onDelete={onDelete} />
+      ) : null}
+    </div>
+  );
+}
+
+function SortablePersonCard({
+  person,
+  selected,
+  disabled,
+  onSelect,
+  onEdit,
+}: {
+  person: Person;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: person.id, disabled });
+  const resigned = isResignedPerson(person);
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={`relative overflow-hidden rounded-xl border ${
+        isDragging
+          ? "z-10 border-dashed border-[#B0B8C1] bg-[#F0F1F3] opacity-40"
+          : selected
+            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+            : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
+      }`}
+    >
+      {selected && !isDragging ? (
+        <span
+          aria-hidden="true"
+          className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
+        />
+      ) : null}
+      <button
+        type="button"
+        onClick={onSelect}
+        onDoubleClick={onEdit}
+        className={`flex w-full items-center gap-2 px-4 py-3 text-left ${
+          disabled
+            ? "cursor-pointer"
+            : "cursor-grab touch-none active:cursor-grabbing"
+        }`}
+        {...attributes}
+        {...(disabled ? {} : listeners)}
+      >
+        <p className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <span className="truncate text-[14px] font-bold text-[#191F28]">
+            {person.name}
+          </span>
+          {person.rank ? (
+            <span className="shrink-0 text-[13px] font-bold text-[#191F28]">
+              {person.rank}
+            </span>
+          ) : null}
+        </p>
+        <span
+          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+            resigned
+              ? "bg-[#FFF5F6] text-[#F04452]"
+              : "bg-[#F2F4F6] text-[#8B95A1]"
+          }`}
+        >
+          {resigned ? "퇴사" : "재직"}
+        </span>
+      </button>
+    </div>
   );
 }
 
 export function DirectoryManageView({
   people,
   teams,
+  trips,
+  embedded = false,
+  onRequestClose,
   onAddPerson,
   onUpdatePerson,
   onDeletePerson,
   onAddTeam,
   onUpdateTeam,
+  onReorderTeams,
+  onReorderTeamMembers,
   onDeleteTeam,
 }: DirectoryManageViewProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | "all">("all");
   const [selectedPersonId, setSelectedPersonId] = useState("");
-  const [personDeleteMode, setPersonDeleteMode] = useState(false);
-  const [checkedPersonIds, setCheckedPersonIds] = useState<string[]>([]);
-  const [teamSearch, setTeamSearch] = useState("");
   const [peopleSearch, setPeopleSearch] = useState("");
   const [showResigned, setShowResigned] = useState(false);
+  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const [activePersonId, setActivePersonId] = useState<string | null>(null);
   const [personDraft, setPersonDraft] = useState<{
     id?: string;
     name: string;
@@ -101,6 +283,7 @@ export function DirectoryManageView({
   } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<
     | { type: "people"; ids: string[]; names: string[] }
+    | { type: "people-blocked"; names: string[] }
     | { type: "team"; id: string; name: string }
     | null
   >(null);
@@ -115,28 +298,48 @@ export function DirectoryManageView({
     [people],
   );
 
-  const activePeopleCount = useMemo(
-    () => people.filter((person) => !isResignedPerson(person)).length,
-    [people],
-  );
+  const personIdsWithTripHistory = useMemo(() => {
+    const ids = new Set<string>();
+    for (const trip of trips) {
+      for (const participant of trip.participants) {
+        if (participant.personId) ids.add(participant.personId);
+      }
+    }
+    return ids;
+  }, [trips]);
 
-  const filteredTeams = useMemo(() => {
-    const query = teamSearch.trim().toLowerCase();
-    if (!query) return teams;
-    return teams.filter((team) => team.name.toLowerCase().includes(query));
-  }, [teams, teamSearch]);
+  const teamPanelTab: "all" | "byTeam" =
+    selectedTeamId === "all" ? "all" : "byTeam";
+
+  const orderedPeopleForView = useMemo(() => {
+    if (selectedTeam) {
+      return selectedTeam.memberIds
+        .map((id) => peopleById.get(id))
+        .filter((person): person is Person => Boolean(person));
+    }
+
+    const seen = new Set<string>();
+    const ordered: Person[] = [];
+    for (const team of teams) {
+      for (const id of team.memberIds) {
+        if (seen.has(id)) continue;
+        const person = peopleById.get(id);
+        if (!person) continue;
+        ordered.push(person);
+        seen.add(id);
+      }
+    }
+    for (const person of people) {
+      if (seen.has(person.id)) continue;
+      ordered.push(person);
+    }
+    return ordered;
+  }, [people, peopleById, selectedTeam, teams]);
 
   const visiblePeople = useMemo(() => {
-    const byTeam =
-      selectedTeamId === "all"
-        ? people
-        : people.filter((person) =>
-            selectedTeam?.memberIds.includes(person.id),
-          );
-
     const byStatus = showResigned
-      ? byTeam
-      : byTeam.filter((person) => !isResignedPerson(person));
+      ? orderedPeopleForView
+      : orderedPeopleForView.filter((person) => !isResignedPerson(person));
 
     const query = peopleSearch.trim().toLowerCase();
     if (!query) return byStatus;
@@ -147,15 +350,47 @@ export function DirectoryManageView({
         person.rank.toLowerCase().includes(query) ||
         person.department.toLowerCase().includes(query),
     );
-  }, [people, peopleSearch, selectedTeam, selectedTeamId, showResigned]);
+  }, [orderedPeopleForView, peopleSearch, showResigned]);
 
-  const exitPersonDeleteMode = () => {
-    setPersonDeleteMode(false);
-    setCheckedPersonIds([]);
+  const titlePeopleCount = useMemo(() => {
+    if (showResigned) return orderedPeopleForView.length;
+    return orderedPeopleForView.filter(
+      (person) => !isResignedPerson(person),
+    ).length;
+  }, [orderedPeopleForView, showResigned]);
+
+  const canReorderPeople =
+    Boolean(selectedTeam) && peopleSearch.trim().length === 0;
+
+  const teamIds = useMemo(() => teams.map((team) => team.id), [teams]);
+  const visiblePersonIds = useMemo(
+    () => visiblePeople.map((person) => person.id),
+    [visiblePeople],
+  );
+
+  const selectAllTab = () => {
+    setSelectedTeamId("all");
   };
 
+  const selectByTeamTab = () => {
+    if (selectedTeamId !== "all") return;
+    setSelectedTeamId(teams[0]?.id ?? "all");
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+
+  const activeTeam = activeTeamId
+    ? (teams.find((team) => team.id === activeTeamId) ?? null)
+    : null;
+  const activePerson = activePersonId
+    ? (peopleById.get(activePersonId) ?? null)
+    : null;
+
   const openCreatePerson = () => {
-    if (personDeleteMode) exitPersonDeleteMode();
     const defaultTeamId = selectedTeamId !== "all" ? selectedTeamId : "";
     setPersonError("");
     setPersonDraft({
@@ -167,7 +402,6 @@ export function DirectoryManageView({
   };
 
   const openEditPerson = (person: Person) => {
-    if (personDeleteMode) exitPersonDeleteMode();
     setPersonError("");
     setPersonDraft({
       id: person.id,
@@ -178,22 +412,42 @@ export function DirectoryManageView({
     });
   };
 
-  const toggleCheckedPerson = (personId: string) => {
-    setCheckedPersonIds((current) =>
-      current.includes(personId)
-        ? current.filter((id) => id !== personId)
-        : [...current, personId],
-    );
-  };
-
   const requestDeletePeople = (ids: string[]) => {
     const uniqueIds = [...new Set(ids)].filter(Boolean);
     if (uniqueIds.length === 0) return;
 
-    const names = uniqueIds.map(
-      (id) => people.find((person) => person.id === id)?.name ?? id,
+    const blockedIds = uniqueIds.filter((id) =>
+      personIdsWithTripHistory.has(id),
     );
-    setDeleteTarget({ type: "people", ids: uniqueIds, names });
+    const allowedIds = uniqueIds.filter(
+      (id) => !personIdsWithTripHistory.has(id),
+    );
+
+    if (blockedIds.length > 0 && allowedIds.length === 0) {
+      setDeleteTarget({
+        type: "people-blocked",
+        names: blockedIds.map(
+          (id) => people.find((person) => person.id === id)?.name ?? id,
+        ),
+      });
+      return;
+    }
+
+    setDeleteTarget({
+      type: "people",
+      ids: allowedIds,
+      names: allowedIds.map(
+        (id) => people.find((person) => person.id === id)?.name ?? id,
+      ),
+    });
+  };
+
+  const requestDeleteTeam = (team: Team) => {
+    setDeleteTarget({
+      type: "team",
+      id: team.id,
+      name: team.name,
+    });
   };
 
   const handleSavePerson = () => {
@@ -262,17 +516,12 @@ export function DirectoryManageView({
     setTeamDraft(null);
   };
 
-  const handleDeleteSelectedTeam = () => {
-    if (!selectedTeam) return;
-    setDeleteTarget({
-      type: "team",
-      id: selectedTeam.id,
-      name: selectedTeam.name,
-    });
-  };
-
   const handleConfirmDeleteTarget = () => {
     if (!deleteTarget) return;
+    if (deleteTarget.type === "people-blocked") {
+      setDeleteTarget(null);
+      return;
+    }
     if (deleteTarget.type === "people") {
       deleteTarget.ids.forEach((id) => onDeletePerson(id));
       if (deleteTarget.ids.includes(selectedPersonId)) {
@@ -280,7 +529,6 @@ export function DirectoryManageView({
       }
       setPersonDraft(null);
       setPersonError("");
-      exitPersonDeleteMode();
     } else {
       onDeleteTeam(deleteTarget.id);
       if (selectedTeamId === deleteTarget.id) {
@@ -314,324 +562,262 @@ export function DirectoryManageView({
     onCancel: () => setDeleteTarget(null),
   });
 
-  const handlePersonMinusClick = () => {
-    setPersonDeleteMode(true);
-    setCheckedPersonIds(
-      selectedPersonId && visiblePeople.some((p) => p.id === selectedPersonId)
-        ? [selectedPersonId]
-        : [],
+  useDialogKeyboard({
+    enabled:
+      Boolean(onRequestClose) &&
+      !personDraft &&
+      !teamDraft &&
+      !deleteTarget,
+    onCancel: onRequestClose,
+  });
+
+  const handleTeamDragStart = (event: DragStartEvent) => {
+    setActiveTeamId(String(event.active.id));
+  };
+
+  const handleTeamDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTeamId(null);
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = teamIds.indexOf(String(active.id));
+    const newIndex = teamIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
+
+    onReorderTeams(arrayMove(teamIds, oldIndex, newIndex));
+  };
+
+  const handlePersonDragStart = (event: DragStartEvent) => {
+    if (!canReorderPeople) return;
+    setActivePersonId(String(event.active.id));
+  };
+
+  const handlePersonDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActivePersonId(null);
+    if (!canReorderPeople || !selectedTeam || !over || active.id === over.id) {
+      return;
+    }
+
+    const nextIds = reorderVisibleWithinFull(
+      selectedTeam.memberIds,
+      visiblePersonIds,
+      String(active.id),
+      String(over.id),
     );
+    if (nextIds.every((id, index) => selectedTeam.memberIds[index] === id)) {
+      return;
+    }
+    onReorderTeamMembers(selectedTeam.id, nextIds);
   };
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[#F2F4F6]">
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-8">
-        <div className="mx-auto flex w-full max-w-[1100px] flex-col">
-          <div className="text-center">
-            <h2 className="text-[22px] font-bold tracking-tight text-[#191F28]">
-              팀/인원 관리
-            </h2>
-            <p className="mt-2 text-[14px] leading-6 text-[#8B95A1]">
-              +/− 로 추가·삭제하고, 사람을 더블클릭하면 수정하거나 삭제할 수
-              있습니다.
-            </p>
-          </div>
+      <div
+        className={`flex min-h-0 flex-1 flex-col ${
+          embedded ? "overflow-hidden p-3" : "overflow-y-auto px-6 py-8"
+        }`}
+      >
+        <div
+          className={`flex w-full flex-col ${
+            embedded ? "min-h-0 flex-1" : "mx-auto max-w-[1280px]"
+          }`}
+        >
+          {embedded ? null : (
+            <div className="text-center">
+              <h2 className="text-[22px] font-bold tracking-tight text-[#191F28]">
+                팀/인원 관리
+              </h2>
+            </div>
+          )}
 
-          <div className="mx-auto mt-8 grid min-h-[560px] w-fit grid-cols-[300px_400px] gap-4">
+          <div
+            className={`grid ${
+              embedded
+                ? "h-full min-h-0 w-full grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)_minmax(0,1fr)] gap-3"
+                : "mx-auto mt-8 h-[min(640px,calc(100vh-220px))] w-fit grid-cols-[300px_360px_320px] gap-4"
+            }`}
+          >
             {/* Teams panel */}
-            <section className="flex flex-col rounded-2xl border border-[#E5E8EB] bg-white">
+            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#E5E8EB] bg-white">
               <header className="flex h-[56px] shrink-0 items-center justify-between gap-2 border-b border-[#E5E8EB] px-4">
                 <h3 className="text-[15px] font-bold text-[#191F28]">팀</h3>
-                <div className="flex items-center gap-1.5">
-                  <IconButton
-                    label="팀 추가"
-                    variant="primary"
-                    onClick={() => setTeamDraft({ name: "" })}
-                  >
-                    +
-                  </IconButton>
-                  <IconButton
-                    label="팀 삭제"
-                    disabled={!selectedTeam}
-                    onClick={handleDeleteSelectedTeam}
-                  >
-                    −
-                  </IconButton>
-                </div>
-              </header>
-
-              <div className="h-[60px] shrink-0 px-4 py-3">
-                <input
-                  type="search"
-                  value={teamSearch}
-                  onChange={(e) => setTeamSearch(e.target.value)}
-                  placeholder="팀명 검색"
-                  className="h-full w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 text-[13px] outline-none transition focus:border-[#3182F6] focus:bg-white"
-                />
-              </div>
-
-              <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedTeamId("all")}
-                  className={`w-full rounded-xl border px-3 py-3 text-left transition-all ${
-                    selectedTeamId === "all"
-                      ? "border-[#3182F6] bg-[#F2F8FF]"
-                      : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
-                  }`}
+                  onClick={() => setTeamDraft({ name: "" })}
+                  aria-label="팀 추가"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-lg font-bold leading-none text-white transition-colors hover:bg-[#1B64DA]"
                 >
-                  <p className="text-[14px] font-bold text-[#191F28]">
-                    전체 인원
-                  </p>
-                  <p className="mt-1 text-[12px] text-[#8B95A1]">
-                    {activePeopleCount}명
-                  </p>
+                  +
                 </button>
+              </header>
 
-                {filteredTeams.map((team) => {
-                  const selected = selectedTeamId === team.id;
-                  const activeMemberCount = countActiveMembers(
-                    team.memberIds,
-                    peopleById,
-                  );
-                  return (
-                    <button
-                      key={team.id}
-                      type="button"
-                      onClick={() => setSelectedTeamId(team.id)}
-                      onDoubleClick={() =>
-                        setTeamDraft({ id: team.id, name: team.name })
-                      }
-                      className={`w-full rounded-xl border px-3 py-3 text-left transition-all ${
-                        selected
-                          ? "border-[#3182F6] bg-[#F2F8FF]"
-                          : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
-                      }`}
-                    >
-                      <p className="truncate text-[14px] font-bold text-[#191F28]">
-                        {team.name}
-                      </p>
-                      <p className="mt-1 text-[12px] text-[#8B95A1]">
-                        멤버 {activeMemberCount}명
-                      </p>
-                    </button>
-                  );
-                })}
+              <div className="flex h-[60px] shrink-0 items-end border-b border-[#E5E8EB] px-4">
+                <div
+                  className="flex h-full w-full"
+                  role="tablist"
+                  aria-label="팀 보기"
+                >
+                  {(
+                    [
+                      { id: "all" as const, label: "전체", onClick: selectAllTab },
+                      {
+                        id: "byTeam" as const,
+                        label: "팀별",
+                        onClick: selectByTeamTab,
+                      },
+                    ] as const
+                  ).map((tab) => {
+                    const active = teamPanelTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={tab.onClick}
+                        className={`relative flex h-full flex-1 items-center justify-center px-2 text-[13px] font-bold transition-colors ${
+                          active
+                            ? "text-[#3182F6]"
+                            : "text-[#8B95A1] hover:text-[#4E5968]"
+                        }`}
+                      >
+                        {tab.label}
+                        {active ? (
+                          <span
+                            aria-hidden="true"
+                            className="absolute right-0 bottom-0 left-0 h-0.5 rounded-full bg-[#3182F6]"
+                          />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                {filteredTeams.length === 0 ? (
+              <div
+                className={`min-h-0 flex-1 px-3 pb-3 pt-3 ${
+                  teamPanelTab === "all"
+                    ? "flex flex-col overflow-hidden"
+                    : "overflow-y-auto"
+                }`}
+              >
+                {teamPanelTab === "all" ? (
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-xl bg-[#F9FAFB] px-4 text-center">
+                    <p className="text-[13px] font-semibold text-[#8B95A1]">
+                      전체 인원
+                    </p>
+                    <p className="mt-2 text-[28px] font-bold tracking-tight text-[#191F28]">
+                      {titlePeopleCount}
+                      <span className="ml-0.5 text-[16px] font-bold text-[#8B95A1]">
+                        명
+                      </span>
+                    </p>
+                    <p className="mt-3 text-[12px] leading-5 text-[#8B95A1]">
+                      오른쪽에서 모든 인원을
+                      <br />
+                      확인할 수 있습니다
+                    </p>
+                  </div>
+                ) : teams.length === 0 ? (
                   <p className="px-2 py-6 text-center text-[13px] text-[#8B95A1]">
-                    검색된 팀이 없습니다
+                    등록된 팀이 없습니다
                   </p>
-                ) : null}
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleTeamDragStart}
+                    onDragEnd={handleTeamDragEnd}
+                    onDragCancel={() => setActiveTeamId(null)}
+                  >
+                    <SortableContext
+                      items={teamIds}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {teams.map((team) => (
+                          <SortableTeamCard
+                            key={team.id}
+                            team={team}
+                            selected={selectedTeamId === team.id}
+                            memberCount={countActiveMembers(
+                              team.memberIds,
+                              peopleById,
+                            )}
+                            disabled={false}
+                            onSelect={() => setSelectedTeamId(team.id)}
+                            onEdit={() =>
+                              setTeamDraft({ id: team.id, name: team.name })
+                            }
+                            onDelete={() => requestDeleteTeam(team)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                    <DragOverlay dropAnimation={null}>
+                      {activeTeam ? (
+                        <div className="overflow-hidden rounded-xl border border-[#E5E8EB] bg-white px-3 py-3 shadow-[0_8px_24px_rgba(25,31,40,0.16)]">
+                          <p className="truncate text-[14px] font-bold text-[#191F28]">
+                            {activeTeam.name}{" "}
+                            <span className="font-medium text-[#8B95A1]">
+                              (
+                              {countActiveMembers(
+                                activeTeam.memberIds,
+                                peopleById,
+                              )}
+                              명)
+                            </span>
+                          </p>
+                        </div>
+                      ) : null}
+                    </DragOverlay>
+                  </DndContext>
+                )}
               </div>
             </section>
 
             {/* People panel */}
-            <section className="flex flex-col rounded-2xl border border-[#E5E8EB] bg-white">
+            <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#E5E8EB] bg-white">
               <header className="flex h-[56px] shrink-0 items-center justify-between gap-2 border-b border-[#E5E8EB] px-4">
-                <div className="min-w-0">
-                  <h3 className="truncate text-[15px] font-bold text-[#191F28]">
-                    {selectedTeam ? selectedTeam.name : "전체 인원"}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {personDeleteMode ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => requestDeletePeople(checkedPersonIds)}
-                        disabled={checkedPersonIds.length === 0}
-                        className="rounded-xl bg-[#F04452] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#D93A47] disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        삭제
-                        {checkedPersonIds.length > 0
-                          ? ` ${checkedPersonIds.length}`
-                          : ""}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={exitPersonDeleteMode}
-                        className="rounded-xl bg-[#F2F4F6] px-3 py-1.5 text-[13px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
-                      >
-                        취소
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        label="사람 추가"
-                        variant="primary"
-                        onClick={openCreatePerson}
-                      >
-                        +
-                      </IconButton>
-                      <IconButton
-                        label="사람 삭제"
-                        disabled={visiblePeople.length === 0}
-                        onClick={handlePersonMinusClick}
-                      >
-                        −
-                      </IconButton>
-                    </>
-                  )}
+                <h3 className="min-w-0 truncate text-[15px] font-bold text-[#191F28]">
+                  {selectedTeam ? selectedTeam.name : "전체 보기"}{" "}
+                  <span className="font-medium text-[#8B95A1]">
+                    ({titlePeopleCount}명)
+                  </span>
+                </h3>
+                <div className="flex shrink-0 items-center gap-3">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-[13px] text-[#4E5968]">
+                    <input
+                      type="checkbox"
+                      checked={showResigned}
+                      onChange={(e) => setShowResigned(e.target.checked)}
+                      className="h-3.5 w-3.5 accent-[#3182F6]"
+                    />
+                    퇴사자
+                  </label>
+                  <button
+                    type="button"
+                    onClick={openCreatePerson}
+                    aria-label="인원 추가"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-lg font-bold leading-none text-white transition-colors hover:bg-[#1B64DA]"
+                  >
+                    +
+                  </button>
                 </div>
               </header>
 
-              <div className="shrink-0 space-y-2 px-4 py-3">
-                <div className="flex h-9 items-center gap-3">
-                  <input
-                    type="search"
-                    value={peopleSearch}
-                    onChange={(e) => setPeopleSearch(e.target.value)}
-                    placeholder="이름, 직급, 소속팀 검색"
-                    className="h-full min-w-0 flex-1 rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 text-[13px] outline-none transition focus:border-[#3182F6] focus:bg-white"
-                  />
-                  <div className="flex h-full shrink-0 items-center rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3">
-                    <p className="text-[13px] font-semibold text-[#4E5968]">
-                      {personDeleteMode ? (
-                        <>
-                          선택{" "}
-                          <span className="font-bold text-[#F04452]">
-                            {checkedPersonIds.length}
-                          </span>
-                          명
-                        </>
-                      ) : (
-                        <>
-                          인원{" "}
-                          <span className="font-bold text-[#3182F6]">
-                            {visiblePeople.length}
-                          </span>
-                          명
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <label className="flex cursor-pointer items-center gap-2 px-0.5">
-                  <input
-                    type="checkbox"
-                    checked={showResigned}
-                    onChange={(e) => setShowResigned(e.target.checked)}
-                    className="h-3.5 w-3.5 accent-[#3182F6]"
-                  />
-                  <span className="text-[12px] font-medium text-[#8B95A1]">
-                    퇴사 인원 표시
-                  </span>
-                </label>
+              <div className="flex h-[60px] shrink-0 items-center border-b border-[#E5E8EB] px-4 py-3">
+                <input
+                  type="search"
+                  value={peopleSearch}
+                  onChange={(e) => setPeopleSearch(e.target.value)}
+                  placeholder="이름, 직급, 소속팀 검색"
+                  className="h-full w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3 text-[13px] outline-none transition focus:border-[#3182F6] focus:bg-white"
+                />
               </div>
 
-              {personDeleteMode ? (
-                <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-2">
-                  <p className="text-[12px] font-medium text-[#8B95A1]">
-                    삭제할 사람을 선택하세요
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const visibleIds = visiblePeople.map((p) => p.id);
-                      const allChecked = visibleIds.every((id) =>
-                        checkedPersonIds.includes(id),
-                      );
-                      setCheckedPersonIds(
-                        allChecked
-                          ? checkedPersonIds.filter(
-                              (id) => !visibleIds.includes(id),
-                            )
-                          : [
-                              ...new Set([
-                                ...checkedPersonIds,
-                                ...visibleIds,
-                              ]),
-                            ],
-                      );
-                    }}
-                    disabled={visiblePeople.length === 0}
-                    className="text-[12px] font-bold text-[#3182F6] disabled:opacity-40"
-                  >
-                    {visiblePeople.length > 0 &&
-                    visiblePeople.every((p) =>
-                      checkedPersonIds.includes(p.id),
-                    )
-                      ? "전체 해제"
-                      : "전체 선택"}
-                  </button>
-                </div>
-              ) : null}
-
-              <div className="flex-1 space-y-2 overflow-y-auto px-3 pb-3">
-                {visiblePeople.map((person) => {
-                  const selected = selectedPersonId === person.id;
-                  const checked = checkedPersonIds.includes(person.id);
-
-                  if (personDeleteMode) {
-                    return (
-                      <label
-                        key={person.id}
-                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
-                          checked
-                            ? "border-[#F04452] bg-[#FFF5F6]"
-                            : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleCheckedPerson(person.id)}
-                          className="h-4 w-4 shrink-0 accent-[#F04452]"
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="flex min-w-0 items-baseline gap-1.5">
-                            <PersonNameLabel
-                              name={person.name}
-                              resigned={isResignedPerson(person)}
-                              className="truncate text-[14px] font-bold text-[#191F28]"
-                            />
-                            {person.rank ? (
-                              <span className="shrink-0 text-[13px] font-medium text-[#8B95A1]">
-                                {person.rank}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className="mt-0.5 block text-[12px] text-[#8B95A1]">
-                            {person.department}
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  }
-
-                  return (
-                    <button
-                      key={person.id}
-                      type="button"
-                      onClick={() => setSelectedPersonId(person.id)}
-                      onDoubleClick={() => openEditPerson(person)}
-                      className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
-                        selected
-                          ? "border-[#3182F6] bg-[#F2F8FF]"
-                          : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
-                      }`}
-                    >
-                      <p className="flex min-w-0 items-baseline gap-1.5">
-                        <PersonNameLabel
-                          name={person.name}
-                          resigned={isResignedPerson(person)}
-                          className="truncate text-[14px] font-bold text-[#191F28]"
-                        />
-                        {person.rank ? (
-                          <span className="shrink-0 text-[13px] font-medium text-[#8B95A1]">
-                            {person.rank}
-                          </span>
-                        ) : null}
-                      </p>
-                      <p className="mt-0.5 text-[12px] text-[#8B95A1]">
-                        {person.department}
-                      </p>
-                    </button>
-                  );
-                })}
-
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-3">
                 {visiblePeople.length === 0 ? (
                   <div className="rounded-xl bg-[#F9FAFB] px-4 py-12 text-center">
                     <p className="text-[14px] font-semibold text-[#4E5968]">
@@ -643,9 +829,70 @@ export function DirectoryManageView({
                       + 버튼으로 사람을 추가해 주세요
                     </p>
                   </div>
-                ) : null}
+                ) : (
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handlePersonDragStart}
+                    onDragEnd={handlePersonDragEnd}
+                    onDragCancel={() => setActivePersonId(null)}
+                  >
+                    <SortableContext
+                      items={visiblePersonIds}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {visiblePeople.map((person) => (
+                          <SortablePersonCard
+                            key={person.id}
+                            person={person}
+                            selected={selectedPersonId === person.id}
+                            disabled={!canReorderPeople}
+                            onSelect={() => setSelectedPersonId(person.id)}
+                            onEdit={() => openEditPerson(person)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                    <DragOverlay dropAnimation={null}>
+                      {activePerson ? (
+                        <div className="flex items-center gap-2 overflow-hidden rounded-xl border border-[#E5E8EB] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(25,31,40,0.16)]">
+                          <p className="flex min-w-0 flex-1 items-baseline gap-1.5">
+                            <span className="truncate text-[14px] font-bold text-[#191F28]">
+                              {activePerson.name}
+                            </span>
+                            {activePerson.rank ? (
+                              <span className="shrink-0 text-[13px] font-bold text-[#191F28]">
+                                {activePerson.rank}
+                              </span>
+                            ) : null}
+                          </p>
+                          <span
+                            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
+                              isResignedPerson(activePerson)
+                                ? "bg-[#FFF5F6] text-[#F04452]"
+                                : "bg-[#F2F4F6] text-[#8B95A1]"
+                            }`}
+                          >
+                            {isResignedPerson(activePerson) ? "퇴사" : "재직"}
+                          </span>
+                        </div>
+                      ) : null}
+                    </DragOverlay>
+                  </DndContext>
+                )}
               </div>
             </section>
+
+            <PersonExpensePanel
+              person={
+                selectedPersonId
+                  ? (peopleById.get(selectedPersonId) ?? null)
+                  : null
+              }
+              trips={trips}
+              people={people}
+            />
           </div>
         </div>
       </div>
@@ -657,7 +904,13 @@ export function DirectoryManageView({
               <h3 className="text-[17px] font-bold text-[#191F28]">
                 {personDraft.id ? "사람 수정" : "사람 추가"}
               </h3>
-              {personDraft.id ? (
+              {personDraft.id &&
+              personIdsWithTripHistory.has(personDraft.id) ? (
+                <p className="max-w-[200px] text-right text-[12px] leading-5 font-medium text-[#8B95A1]">
+                  출장 이력이 있어 삭제할 수 없습니다. 아래에서 퇴사 처리해
+                  주세요.
+                </p>
+              ) : personDraft.id ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -844,58 +1097,90 @@ export function DirectoryManageView({
       {deleteTarget ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[360px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            <h3 className="text-[17px] font-bold text-[#191F28]">
-              {deleteTarget.type === "people"
-                ? deleteTarget.ids.length > 1
-                  ? `${deleteTarget.ids.length}명을 삭제할까요?`
-                  : "사람을 삭제할까요?"
-                : "팀을 삭제할까요?"}
-            </h3>
-            <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
-              {deleteTarget.type === "people" ? (
-                deleteTarget.ids.length === 1 ? (
-                  <>
-                    <span className="font-semibold text-[#191F28]">
-                      {deleteTarget.names[0]}
-                    </span>
-                    을(를) 삭제합니다.
-                  </>
-                ) : (
-                  <>
-                    <span className="font-semibold text-[#191F28]">
-                      {deleteTarget.names.slice(0, 3).join(", ")}
-                      {deleteTarget.names.length > 3
-                        ? ` 외 ${deleteTarget.names.length - 3}명`
-                        : ""}
-                    </span>
-                    을(를) 삭제합니다.
-                  </>
-                )
-              ) : (
-                <>
+            {deleteTarget.type === "people-blocked" ? (
+              <>
+                <h3 className="text-[17px] font-bold text-[#191F28]">
+                  삭제할 수 없습니다
+                </h3>
+                <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
                   <span className="font-semibold text-[#191F28]">
-                    {deleteTarget.name}
+                    {deleteTarget.names.length === 1
+                      ? deleteTarget.names[0]
+                      : `${deleteTarget.names.slice(0, 3).join(", ")}${
+                          deleteTarget.names.length > 3
+                            ? ` 외 ${deleteTarget.names.length - 3}명`
+                            : ""
+                        }`}
                   </span>
-                  을(를) 삭제합니다.
-                </>
-              )}
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleConfirmDeleteTarget}
-                className="rounded-xl bg-[#F04452] px-4 py-3 text-[14px] font-bold text-white hover:bg-[#D93A47]"
-              >
-                삭제
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteTarget(null)}
-                className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] hover:bg-[#E5E8EB]"
-              >
-                취소
-              </button>
-            </div>
+                  은(는) 출장 이력이 있어 삭제할 수 없습니다. 사람 수정에서
+                  퇴사 처리해 주세요.
+                </p>
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(null)}
+                    className="w-full rounded-xl bg-[#3182F6] px-4 py-3 text-[14px] font-bold text-white hover:bg-[#1B64DA]"
+                  >
+                    확인
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-[17px] font-bold text-[#191F28]">
+                  {deleteTarget.type === "people"
+                    ? deleteTarget.ids.length > 1
+                      ? `${deleteTarget.ids.length}명을 삭제할까요?`
+                      : "사람을 삭제할까요?"
+                    : "팀을 삭제할까요?"}
+                </h3>
+                <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
+                  {deleteTarget.type === "people" ? (
+                    deleteTarget.ids.length === 1 ? (
+                      <>
+                        <span className="font-semibold text-[#191F28]">
+                          {deleteTarget.names[0]}
+                        </span>
+                        을(를) 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-[#191F28]">
+                          {deleteTarget.names.slice(0, 3).join(", ")}
+                          {deleteTarget.names.length > 3
+                            ? ` 외 ${deleteTarget.names.length - 3}명`
+                            : ""}
+                        </span>
+                        을(를) 삭제합니다. 이 작업은 되돌릴 수 없습니다.
+                      </>
+                    )
+                  ) : (
+                    <>
+                      <span className="font-semibold text-[#191F28]">
+                        {deleteTarget.name}
+                      </span>
+                      을(를) 삭제합니다.
+                    </>
+                  )}
+                </p>
+                <div className="mt-6 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={handleConfirmDeleteTarget}
+                    className="rounded-xl bg-[#F04452] px-4 py-3 text-[14px] font-bold text-white hover:bg-[#D93A47]"
+                  >
+                    삭제
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(null)}
+                    className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] hover:bg-[#E5E8EB]"
+                  >
+                    취소
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}
