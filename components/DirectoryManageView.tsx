@@ -45,6 +45,7 @@ type DirectoryManageViewProps = {
   onUpdateTeam: (teamId: string, team: Omit<Team, "id">) => void;
   onReorderTeams: (orderedIds: string[]) => void;
   onReorderTeamMembers: (teamId: string, orderedMemberIds: string[]) => void;
+  onReorderPeople: (orderedIds: string[]) => void;
   onDeleteTeam: (teamId: string) => void;
 };
 
@@ -134,8 +135,8 @@ function SortableTeamCard({
         isDragging
           ? "z-10 border-dashed border-[#B0B8C1] bg-[#F0F1F3] opacity-40"
           : selected
-            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
-            : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
+            ? "border-[#D1D6DB] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(25,31,40,0.12),0_2px_6px_rgba(25,31,40,0.10)]"
+            : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
       }`}
     >
       {selected && !isDragging ? (
@@ -198,12 +199,12 @@ function SortablePersonCard({
         transform: CSS.Transform.toString(transform),
         transition,
       }}
-      className={`relative overflow-hidden rounded-xl border ${
+      className={`group relative overflow-hidden rounded-xl border ${
         isDragging
           ? "z-10 border-dashed border-[#B0B8C1] bg-[#F0F1F3] opacity-40"
           : selected
-            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
-            : "border-transparent bg-[#F0F1F3] hover:bg-[#E8EAED]"
+            ? "border-[#D1D6DB] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(25,31,40,0.12),0_2px_6px_rgba(25,31,40,0.10)]"
+            : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
       }`}
     >
       {selected && !isDragging ? (
@@ -234,16 +235,29 @@ function SortablePersonCard({
             </span>
           ) : null}
         </p>
-        <span
-          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-semibold ${
-            resigned
-              ? "bg-[#FFF5F6] text-[#F04452]"
-              : "bg-[#F2F4F6] text-[#8B95A1]"
+        <div
+          className={`relative flex w-[52px] shrink-0 items-center justify-end ${
+            isDragging ? "" : "group-hover:pointer-events-none"
           }`}
         >
-          {resigned ? "퇴사" : "재직"}
-        </span>
+          <span
+            className={`rounded-md px-1.5 py-0.5 text-[11px] font-semibold transition-opacity ${
+              isDragging ? "" : "group-hover:opacity-0"
+            } ${
+              resigned
+                ? "bg-[#FFF5F6] text-[#F04452]"
+                : "bg-[#F2F4F6] text-[#8B95A1]"
+            }`}
+          >
+            {resigned ? "퇴사" : "재직"}
+          </span>
+        </div>
       </button>
+      {!isDragging ? (
+        <div className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+          <RowEditButton label="인원 수정" onClick={onEdit} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -261,6 +275,7 @@ export function DirectoryManageView({
   onUpdateTeam,
   onReorderTeams,
   onReorderTeamMembers,
+  onReorderPeople,
   onDeleteTeam,
 }: DirectoryManageViewProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | "all">("all");
@@ -285,6 +300,7 @@ export function DirectoryManageView({
     | { type: "people"; ids: string[]; names: string[] }
     | { type: "people-blocked"; names: string[] }
     | { type: "team"; id: string; name: string }
+    | { type: "team-blocked"; name: string; memberNames: string[] }
     | null
   >(null);
 
@@ -318,23 +334,9 @@ export function DirectoryManageView({
         .filter((person): person is Person => Boolean(person));
     }
 
-    const seen = new Set<string>();
-    const ordered: Person[] = [];
-    for (const team of teams) {
-      for (const id of team.memberIds) {
-        if (seen.has(id)) continue;
-        const person = peopleById.get(id);
-        if (!person) continue;
-        ordered.push(person);
-        seen.add(id);
-      }
-    }
-    for (const person of people) {
-      if (seen.has(person.id)) continue;
-      ordered.push(person);
-    }
-    return ordered;
-  }, [people, peopleById, selectedTeam, teams]);
+    // 전체 탭: people 전역 순서(sort_order)를 그대로 사용합니다.
+    return people;
+  }, [people, peopleById, selectedTeam]);
 
   const visiblePeople = useMemo(() => {
     const byStatus = showResigned
@@ -360,7 +362,8 @@ export function DirectoryManageView({
   }, [orderedPeopleForView, showResigned]);
 
   const canReorderPeople =
-    Boolean(selectedTeam) && peopleSearch.trim().length === 0;
+    peopleSearch.trim().length === 0 &&
+    (Boolean(selectedTeam) || selectedTeamId === "all");
 
   const teamIds = useMemo(() => teams.map((team) => team.id), [teams]);
   const visiblePersonIds = useMemo(
@@ -443,6 +446,20 @@ export function DirectoryManageView({
   };
 
   const requestDeleteTeam = (team: Team) => {
+    const blockedMemberIds = team.memberIds.filter((id) =>
+      personIdsWithTripHistory.has(id),
+    );
+    if (blockedMemberIds.length > 0) {
+      setDeleteTarget({
+        type: "team-blocked",
+        name: team.name,
+        memberNames: blockedMemberIds.map(
+          (id) => peopleById.get(id)?.name ?? id,
+        ),
+      });
+      return;
+    }
+
     setDeleteTarget({
       type: "team",
       id: team.id,
@@ -518,7 +535,10 @@ export function DirectoryManageView({
 
   const handleConfirmDeleteTarget = () => {
     if (!deleteTarget) return;
-    if (deleteTarget.type === "people-blocked") {
+    if (
+      deleteTarget.type === "people-blocked" ||
+      deleteTarget.type === "team-blocked"
+    ) {
       setDeleteTarget(null);
       return;
     }
@@ -595,20 +615,35 @@ export function DirectoryManageView({
   const handlePersonDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActivePersonId(null);
-    if (!canReorderPeople || !selectedTeam || !over || active.id === over.id) {
+    if (!canReorderPeople || !over || active.id === over.id) {
       return;
     }
 
+    if (selectedTeam) {
+      const nextIds = reorderVisibleWithinFull(
+        selectedTeam.memberIds,
+        visiblePersonIds,
+        String(active.id),
+        String(over.id),
+      );
+      if (nextIds.every((id, index) => selectedTeam.memberIds[index] === id)) {
+        return;
+      }
+      onReorderTeamMembers(selectedTeam.id, nextIds);
+      return;
+    }
+
+    const fullIds = people.map((person) => person.id);
     const nextIds = reorderVisibleWithinFull(
-      selectedTeam.memberIds,
+      fullIds,
       visiblePersonIds,
       String(active.id),
       String(over.id),
     );
-    if (nextIds.every((id, index) => selectedTeam.memberIds[index] === id)) {
+    if (nextIds.every((id, index) => fullIds[index] === id)) {
       return;
     }
-    onReorderTeamMembers(selectedTeam.id, nextIds);
+    onReorderPeople(nextIds);
   };
 
   return (
@@ -635,7 +670,7 @@ export function DirectoryManageView({
             className={`grid ${
               embedded
                 ? "h-full min-h-0 w-full grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)_minmax(0,1fr)] gap-3"
-                : "mx-auto mt-8 h-[min(640px,calc(100vh-220px))] w-fit grid-cols-[300px_360px_320px] gap-4"
+                : "mx-auto mt-8 h-[min(680px,calc(100vh-200px))] w-fit grid-cols-[300px_360px_320px] gap-4"
             }`}
           >
             {/* Teams panel */}
@@ -735,7 +770,7 @@ export function DirectoryManageView({
                       items={teamIds}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {teams.map((team) => (
                           <SortableTeamCard
                             key={team.id}
@@ -817,7 +852,7 @@ export function DirectoryManageView({
                 />
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-3">
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
                 {visiblePeople.length === 0 ? (
                   <div className="rounded-xl bg-[#F9FAFB] px-4 py-12 text-center">
                     <p className="text-[14px] font-semibold text-[#4E5968]">
@@ -841,7 +876,7 @@ export function DirectoryManageView({
                       items={visiblePersonIds}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {visiblePeople.map((person) => (
                           <SortablePersonCard
                             key={person.id}
@@ -906,9 +941,10 @@ export function DirectoryManageView({
               </h3>
               {personDraft.id &&
               personIdsWithTripHistory.has(personDraft.id) ? (
-                <p className="max-w-[200px] text-right text-[12px] leading-5 font-medium text-[#8B95A1]">
-                  출장 이력이 있어 삭제할 수 없습니다. 아래에서 퇴사 처리해
-                  주세요.
+                <p className="max-w-[220px] text-right text-[12px] leading-5 font-medium text-[#8B95A1]">
+                  출장 이력이 있어 삭제할 수 없습니다.
+                  <br />
+                  아래에서 퇴사 처리해 주세요.
                 </p>
               ) : personDraft.id ? (
                 <button
@@ -992,19 +1028,41 @@ export function DirectoryManageView({
                       </p>
                       <p className="mt-0.5 text-[12px] text-[#8B95A1]">
                         {personDraft.employmentStatus === "퇴사"
-                          ? "퇴사 처리된 인원입니다. 복구하면 다시 선택할 수 있습니다."
+                          ? teams.some((team) => team.id === personDraft.teamId)
+                            ? "퇴사 처리된 인원입니다. 복구하면 다시 선택할 수 있습니다."
+                            : "소속 팀이 없습니다. 팀을 선택한 뒤 재직 복구해 주세요."
                           : "퇴사 처리해도 기존 출장 기록은 유지됩니다."}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
+                        if (personDraft.employmentStatus === "퇴사") {
+                          const teamExists = teams.some(
+                            (team) => team.id === personDraft.teamId,
+                          );
+                          if (!personDraft.teamId || !teamExists) {
+                            setPersonDraft({
+                              ...personDraft,
+                              teamId: teamExists ? personDraft.teamId : "",
+                            });
+                            setPersonError(
+                              teams.length === 0
+                                ? "재직 복구하려면 먼저 팀을 등록해 주세요."
+                                : "재직 복구하려면 현재 등록된 팀을 선택해 주세요.",
+                            );
+                            return;
+                          }
+                          setPersonError("");
+                          setPersonDraft({
+                            ...personDraft,
+                            employmentStatus: "재직",
+                          });
+                          return;
+                        }
                         setPersonDraft({
                           ...personDraft,
-                          employmentStatus:
-                            personDraft.employmentStatus === "퇴사"
-                              ? "재직"
-                              : "퇴사",
+                          employmentStatus: "퇴사",
                         });
                       }}
                       className={`shrink-0 rounded-xl px-3 py-2 text-[13px] font-bold transition-colors ${
@@ -1097,23 +1155,48 @@ export function DirectoryManageView({
       {deleteTarget ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-[360px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]">
-            {deleteTarget.type === "people-blocked" ? (
+            {deleteTarget.type === "people-blocked" ||
+            deleteTarget.type === "team-blocked" ? (
               <>
                 <h3 className="text-[17px] font-bold text-[#191F28]">
                   삭제할 수 없습니다
                 </h3>
                 <p className="mt-2 text-[14px] leading-6 text-[#4E5968]">
-                  <span className="font-semibold text-[#191F28]">
-                    {deleteTarget.names.length === 1
-                      ? deleteTarget.names[0]
-                      : `${deleteTarget.names.slice(0, 3).join(", ")}${
-                          deleteTarget.names.length > 3
-                            ? ` 외 ${deleteTarget.names.length - 3}명`
-                            : ""
-                        }`}
-                  </span>
-                  은(는) 출장 이력이 있어 삭제할 수 없습니다. 사람 수정에서
-                  퇴사 처리해 주세요.
+                  {deleteTarget.type === "people-blocked" ? (
+                    <>
+                      <span className="font-semibold text-[#191F28]">
+                        {deleteTarget.names.length === 1
+                          ? deleteTarget.names[0]
+                          : `${deleteTarget.names.slice(0, 3).join(", ")}${
+                              deleteTarget.names.length > 3
+                                ? ` 외 ${deleteTarget.names.length - 3}명`
+                                : ""
+                            }`}
+                      </span>
+                      은(는) 출장 이력이 있어 삭제할 수 없습니다.
+                      <br />
+                      사람 수정에서 퇴사 처리해 주세요.
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold text-[#191F28]">
+                        {deleteTarget.name}
+                      </span>
+                      팀에 출장 이력이 있는 인원이 있어 삭제할 수 없습니다.
+                      <br />
+                      <span className="font-semibold text-[#191F28]">
+                        {deleteTarget.memberNames.length === 1
+                          ? deleteTarget.memberNames[0]
+                          : `${deleteTarget.memberNames.slice(0, 3).join(", ")}${
+                              deleteTarget.memberNames.length > 3
+                                ? ` 외 ${deleteTarget.memberNames.length - 3}명`
+                                : ""
+                            }`}
+                      </span>
+                      을(를) 다른 팀으로 옮기거나 퇴사 처리한 뒤 다시 시도해
+                      주세요.
+                    </>
+                  )}
                 </p>
                 <div className="mt-6">
                   <button

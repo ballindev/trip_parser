@@ -48,6 +48,11 @@ export const api = {
     }),
   deletePerson: (id: string) =>
     request<{ ok: boolean }>(`/api/people/${id}`, { method: "DELETE" }),
+  reorderPeople: (orderedIds: string[]) =>
+    request<{ ok: boolean; orderedIds: string[] }>("/api/people", {
+      method: "PATCH",
+      body: JSON.stringify({ orderedIds }),
+    }),
 
   getTeams: () => request<Team[]>("/api/teams"),
   createTeam: (body: { name: string; memberIds?: string[] }) =>

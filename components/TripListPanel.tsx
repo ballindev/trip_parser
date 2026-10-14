@@ -151,7 +151,7 @@ export function TripListPanel({
         </div>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 pb-4">
+      <div className="flex-1 space-y-2.5 overflow-y-auto px-4 pb-4">
         {trips.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center shadow-sm">
             <p className="text-[13px] font-semibold text-[#64748B]">
@@ -182,7 +182,7 @@ export function TripListPanel({
                 key={trip.id}
                 className={`group relative overflow-hidden rounded-xl border transition-all ${
                   selected
-                    ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+                    ? "border-[#D1D6DB] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(25,31,40,0.12),0_2px_6px_rgba(25,31,40,0.10)]"
                     : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
                 }`}
               >

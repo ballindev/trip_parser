@@ -204,6 +204,21 @@ end $$;
 create index if not exists people_employment_status_idx
   on people (employment_status);
 
+-- 전체 인원 목록 표시 순서
+alter table people
+  add column if not exists sort_order integer not null default 0;
+
+with ordered_people as (
+  select id, row_number() over (order by name asc, id asc) - 1 as rn
+  from people
+)
+update people
+set sort_order = ordered_people.rn
+from ordered_people
+where people.id = ordered_people.id;
+
+create index if not exists people_sort_order_idx on people (sort_order);
+
 -- 숙박비 인원 연결 테이블 제거 (본인 1인 고정)
 drop policy if exists "dev_all_lodging_item_people" on lodging_item_people;
 drop table if exists lodging_item_people;

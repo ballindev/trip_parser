@@ -82,28 +82,40 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     if (body.teamId !== undefined) {
-      await supabase.from("team_members").delete().eq("person_id", id);
-      if (body.teamId) {
-        const { data: maxMember } = await supabase
-          .from("team_members")
-          .select("sort_order")
-          .eq("team_id", body.teamId)
-          .order("sort_order", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const nextMemberOrder =
-          typeof maxMember?.sort_order === "number"
-            ? maxMember.sort_order + 1
-            : 0;
+      const { data: currentMembership } = await supabase
+        .from("team_members")
+        .select("team_id, sort_order")
+        .eq("person_id", id)
+        .maybeSingle();
 
-        const { error: memberError } = await supabase
-          .from("team_members")
-          .insert({
-            team_id: body.teamId,
-            person_id: id,
-            sort_order: nextMemberOrder,
-          });
-        if (memberError) return jsonError(memberError.message, 500);
+      const currentTeamId = (currentMembership?.team_id as string | undefined) ?? "";
+      const sameTeam = Boolean(body.teamId) && body.teamId === currentTeamId;
+
+      // 팀이 그대로면 팀 내 순서를 유지합니다.
+      if (!sameTeam) {
+        await supabase.from("team_members").delete().eq("person_id", id);
+        if (body.teamId) {
+          const { data: maxMember } = await supabase
+            .from("team_members")
+            .select("sort_order")
+            .eq("team_id", body.teamId)
+            .order("sort_order", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const nextMemberOrder =
+            typeof maxMember?.sort_order === "number"
+              ? maxMember.sort_order + 1
+              : 0;
+
+          const { error: memberError } = await supabase
+            .from("team_members")
+            .insert({
+              team_id: body.teamId,
+              person_id: id,
+              sort_order: nextMemberOrder,
+            });
+          if (memberError) return jsonError(memberError.message, 500);
+        }
       }
     }
 

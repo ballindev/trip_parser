@@ -443,7 +443,7 @@ export function TripReportDashboard() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="directory-modal-title"
-            className="flex h-[min(720px,90vh)] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+            className="flex h-[min(760px,92vh)] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl bg-[#F8FAFC] shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
           >
             <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] bg-white px-5">
               <div className="flex min-w-0 items-baseline gap-2.5">
@@ -508,22 +508,28 @@ export function TripReportDashboard() {
                       person.id === personId ? updated : person,
                     ),
                   );
-                  setTeams((prev) =>
-                    prev.map((team) => {
+                  setTeams((prev) => {
+                    const currentTeam = prev.find((team) =>
+                      team.memberIds.includes(personId),
+                    );
+                    // 팀이 그대로면 memberIds 순서를 유지합니다.
+                    if (currentTeam?.id === teamId) {
+                      return prev;
+                    }
+
+                    return prev.map((team) => {
                       const withoutPerson = team.memberIds.filter(
                         (id) => id !== personId,
                       );
                       if (team.id === teamId) {
                         return {
                           ...team,
-                          memberIds: withoutPerson.includes(personId)
-                            ? withoutPerson
-                            : [...withoutPerson, personId],
+                          memberIds: [...withoutPerson, personId],
                         };
                       }
                       return { ...team, memberIds: withoutPerson };
-                    }),
-                  );
+                    });
+                  });
                   setTrips((prev) =>
                     prev.map((trip) => ({
                       ...trip,
@@ -633,6 +639,25 @@ export function TripReportDashboard() {
                   setTeams(previous);
                   setError(
                     err instanceof Error ? err.message : "팀원 순서 변경 실패",
+                  );
+                }
+              }}
+              onReorderPeople={async (orderedIds) => {
+                const previous = people;
+                setPeople((prev) => {
+                  const byId = new Map(prev.map((person) => [person.id, person]));
+                  return orderedIds
+                    .map((id) => byId.get(id))
+                    .filter((person): person is (typeof prev)[number] =>
+                      Boolean(person),
+                    );
+                });
+                try {
+                  await api.reorderPeople(orderedIds);
+                } catch (err) {
+                  setPeople(previous);
+                  setError(
+                    err instanceof Error ? err.message : "인원 순서 변경 실패",
                   );
                 }
               }}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { DatePicker } from "@/components/DatePicker";
 import {
   PersonNameLabel,
@@ -68,8 +74,6 @@ const MEAL_OPTIONS: {
   { key: "lunch", label: "중식" },
   { key: "dinner", label: "석식" },
 ];
-
-type FormAlign = "left" | "center";
 
 type ReportFormPanelProps = {
   participant: Participant | null;
@@ -625,7 +629,6 @@ export function ReportFormPanel({
   onDraftSave,
   onSubmit,
 }: ReportFormPanelProps) {
-  const [formAlign, setFormAlign] = useState<FormAlign>("left");
   const [costDeleteTarget, setCostDeleteTarget] = useState<
     | { type: "transport"; id: string }
     | { type: "lodging"; id: string }
@@ -812,6 +815,86 @@ export function ReportFormPanel({
     return collectRentHalfPersonIds([...others, liveParticipant]);
   }, [participant, form, tripParticipants]);
 
+  const formScrollRef = useRef<HTMLDivElement>(null);
+  const summaryAsideRef = useRef<HTMLElement>(null);
+  const summaryOffsetY = useRef(0);
+  const summaryTargetY = useRef(0);
+  const summaryRafRef = useRef<number | null>(null);
+
+  // sticky 대신 스크롤량을 lerp로 따라가 부드럽게 고정됩니다.
+  useEffect(() => {
+    if (!participant || !form) return;
+
+    const scrollEl = formScrollRef.current;
+    const summaryEl = summaryAsideRef.current;
+    if (!scrollEl || !summaryEl) return;
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const lerpFactor = reduceMotion ? 1 : 0.14;
+    const baseOffset = tripName ? 60 : 0;
+
+    const measureMax = () => {
+      const contentEl = scrollEl.firstElementChild as HTMLElement | null;
+      const contentHeight = contentEl?.offsetHeight ?? scrollEl.scrollHeight;
+      const summaryHeight = summaryEl.offsetHeight;
+      return Math.max(0, contentHeight - baseOffset - summaryHeight - 16);
+    };
+
+    const updateTarget = () => {
+      summaryTargetY.current = Math.min(
+        Math.max(0, scrollEl.scrollTop),
+        measureMax(),
+      );
+    };
+
+    const tick = () => {
+      const prev = summaryOffsetY.current;
+      const target = summaryTargetY.current;
+      const next = prev + (target - prev) * lerpFactor;
+      summaryOffsetY.current =
+        Math.abs(target - next) < 0.4 ? target : next;
+      summaryEl.style.transform = `translate3d(0, ${summaryOffsetY.current}px, 0)`;
+      if (summaryOffsetY.current !== target) {
+        summaryRafRef.current = requestAnimationFrame(tick);
+      } else {
+        summaryRafRef.current = null;
+      }
+    };
+
+    const onScroll = () => {
+      updateTarget();
+      if (summaryRafRef.current == null) {
+        summaryRafRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    updateTarget();
+    summaryOffsetY.current = summaryTargetY.current;
+    summaryEl.style.transform = `translate3d(0, ${summaryOffsetY.current}px, 0)`;
+
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    const resizeObserver = new ResizeObserver(onScroll);
+    resizeObserver.observe(scrollEl);
+    if (scrollEl.firstElementChild) {
+      resizeObserver.observe(scrollEl.firstElementChild);
+    }
+    resizeObserver.observe(summaryEl);
+
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      resizeObserver.disconnect();
+      if (summaryRafRef.current != null) {
+        cancelAnimationFrame(summaryRafRef.current);
+        summaryRafRef.current = null;
+      }
+      summaryEl.style.transform = "";
+    };
+  }, [participant, form, tripName]);
+
   if (!participant || !form) {
     return (
       <section className="flex h-full w-[70%] flex-1 flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
@@ -941,77 +1024,46 @@ export function ReportFormPanel({
           ) : null}
           <StatusBadge status={participant.status} />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[12px] font-semibold text-[#64748B]">
-              정렬
-            </span>
-            <div className="flex rounded-xl bg-[#F1F5F9] p-0.5">
-              {(
-                [
-                  { value: "left", label: "왼쪽" },
-                  { value: "center", label: "가운데" },
-                ] as const
-              ).map((option) => {
-                const selected = formAlign === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFormAlign(option.value)}
-                    className={`rounded-lg px-2.5 py-1 text-[12px] font-bold transition-colors ${
-                      selected
-                        ? "bg-white text-[#3182F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
-                        : "text-[#64748B] hover:text-[#64748B]"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={saving || copySources.length === 0}
-              title={
-                copySources.length === 0
-                  ? "복사할 작성 내역이 없습니다"
-                  : "같은 출장의 다른 참여자 입력을 불러옵니다"
-              }
-              onClick={() => {
-                setCopySourceId(null);
-                setCopyPickerOpen(true);
-              }}
-              className="rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:border-[#3182F6] hover:bg-[#F2F8FF] hover:text-[#3182F6] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#E2E8F0] disabled:hover:bg-white disabled:hover:text-[#64748B]"
-            >
-              불러오기
-            </button>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={onDraftSave}
-              className="rounded-xl bg-[#F1F5F9] px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {saving ? "저장 중…" : "임시 저장"}
-            </button>
-            <button
-              type="button"
-              disabled={saving || !canSubmit}
-              onClick={onSubmit}
-              title={
-                canSubmit
-                  ? "필수 입력을 모두 채웠습니다. 제출할 수 있습니다."
-                  : missingRequiredLabels.length > 0
-                    ? `미입력: ${missingRequiredLabels.join(", ")}`
-                    : "필수값을 모두 입력해야 제출할 수 있습니다."
-              }
-              className="rounded-xl bg-[#3182F6] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#B0B8C1] disabled:hover:bg-[#B0B8C1]"
-            >
-              제출
-            </button>
-          </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            disabled={saving || copySources.length === 0}
+            title={
+              copySources.length === 0
+                ? "복사할 작성 내역이 없습니다"
+                : "같은 출장의 다른 참여자 입력을 불러옵니다"
+            }
+            onClick={() => {
+              setCopySourceId(null);
+              setCopyPickerOpen(true);
+            }}
+            className="rounded-xl border border-[#E2E8F0] bg-white px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:border-[#3182F6] hover:bg-[#F2F8FF] hover:text-[#3182F6] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#E2E8F0] disabled:hover:bg-white disabled:hover:text-[#64748B]"
+          >
+            불러오기
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={onDraftSave}
+            className="rounded-xl bg-[#F1F5F9] px-3 py-1.5 text-[13px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {saving ? "저장 중…" : "임시 저장"}
+          </button>
+          <button
+            type="button"
+            disabled={saving || !canSubmit}
+            onClick={onSubmit}
+            title={
+              canSubmit
+                ? "필수 입력을 모두 채웠습니다. 제출할 수 있습니다."
+                : missingRequiredLabels.length > 0
+                  ? `미입력: ${missingRequiredLabels.join(", ")}`
+                  : "필수값을 모두 입력해야 제출할 수 있습니다."
+            }
+            className="rounded-xl bg-[#3182F6] px-3 py-1.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#B0B8C1] disabled:hover:bg-[#B0B8C1]"
+          >
+            제출
+          </button>
         </div>
       </header>
 
@@ -1026,12 +1078,11 @@ export function ReportFormPanel({
         </div>
       ) : null}
 
-      <div className="flex-1 overflow-y-auto px-5 pb-4 pt-0">
-        <div
-          className={`flex w-full max-w-[1180px] items-start gap-6 ${
-            formAlign === "center" ? "mx-auto" : "mr-auto"
-          }`}
-        >
+      <div
+        ref={formScrollRef}
+        className="flex-1 overflow-y-auto px-5 pb-4 pt-0"
+      >
+        <div className="mr-auto flex w-full max-w-[1180px] items-start gap-6">
           <div className="min-w-0 flex-1">
             {tripName ? (
               <div className="flex h-[60px] items-center gap-2.5 border-b border-[#E2E8F0]">
@@ -1622,11 +1673,12 @@ export function ReportFormPanel({
           </div>
 
           <aside
-            className={`sticky top-0 hidden w-[260px] shrink-0 xl:block ${
+            ref={summaryAsideRef}
+            className={`hidden w-[260px] shrink-0 self-start will-change-transform xl:block ${
               tripName ? "mt-[60px]" : ""
             }`}
           >
-            <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+            <div className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_1px_2px_rgba(25,31,40,0.06),0_2px_8px_rgba(25,31,40,0.06)]">
               <p className="text-[13px] font-semibold text-[#64748B]">
                 입력 요약
               </p>

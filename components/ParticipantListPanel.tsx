@@ -116,7 +116,7 @@ function SortableParticipantCard({
         isDragging
           ? "z-10 border-dashed border-[#B0B8C1] bg-[#F2F4F6] opacity-40"
           : selected
-            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+            ? "border-[#D1D6DB] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(25,31,40,0.12),0_2px_6px_rgba(25,31,40,0.10)]"
             : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
       }`}
     >
@@ -274,7 +274,7 @@ export function ParticipantListPanel({
               items={participantIds}
               strategy={verticalListSortingStrategy}
             >
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {participants.map((participant) => (
                   <SortableParticipantCard
                     key={participant.id}

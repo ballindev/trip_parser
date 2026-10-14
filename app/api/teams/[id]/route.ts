@@ -70,6 +70,28 @@ export async function DELETE(_request: Request, { params }: Params) {
   try {
     const { id } = await params;
     const supabase = getSupabaseServerClient();
+
+    const { data: members, error: membersError } = await supabase
+      .from("team_members")
+      .select("person_id")
+      .eq("team_id", id);
+    if (membersError) return jsonError(membersError.message, 500);
+
+    const memberIds = (members ?? []).map((row) => row.person_id as string);
+    if (memberIds.length > 0) {
+      const { count, error: historyError } = await supabase
+        .from("trip_participants")
+        .select("id", { count: "exact", head: true })
+        .in("person_id", memberIds);
+      if (historyError) return jsonError(historyError.message, 500);
+      if ((count ?? 0) > 0) {
+        return jsonError(
+          "출장 이력이 있는 팀원이 있어 팀을 삭제할 수 없습니다.",
+          400,
+        );
+      }
+    }
+
     const { error } = await supabase.from("teams").delete().eq("id", id);
     if (error) return jsonError(error.message, 500);
     return jsonOk({ ok: true });

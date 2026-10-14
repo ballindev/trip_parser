@@ -21,6 +21,7 @@ export type DbPerson = {
   department: string;
   employment_status?: "재직" | "퇴사" | null;
   resigned_at?: string | null;
+  sort_order?: number | null;
 };
 
 export type DbTeam = {

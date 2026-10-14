@@ -48,6 +48,22 @@ function indent(level: 1 | 2, text: string): string {
   return `${"  ".repeat(level)}${text}`;
 }
 
+/**
+ * 하위 항목이 1개면 "제목: 내용", 2개 이상이면 제목 + 가/나/다 목록으로 만듭니다.
+ */
+function formatTitledList(title: string, bodies: string[]): string {
+  if (bodies.length === 0) return "";
+  if (bodies.length === 1) {
+    return `${title}: ${bodies[0]}`;
+  }
+  return joinLines([
+    title,
+    ...bodies.map((body, index) =>
+      indent(1, `${hangulOrdinal(index)}. ${body}`),
+    ),
+  ]);
+}
+
 function won(value: number): string {
   return `${formatCurrency(value)} 원`;
 }
@@ -236,17 +252,14 @@ function buildDailyAllowanceSection(
 
   if (ordered.length === 0) return "";
 
-  const lines = ordered.map((group, index) => {
+  const bodies = ordered.map((group) => {
     const people = group.names.length;
     const total = group.rate * people * group.days;
     const rentNote = group.rent ? " (차량렌트)" : "";
-    return indent(
-      1,
-      `${hangulOrdinal(index)}. ${won(group.rate)} × ${people}명 × ${group.days}일 = ${won(total)} (${formatNames(group.names)})${rentNote}`,
-    );
+    return `${won(group.rate)} × ${people}명 × ${group.days}일 = ${won(total)} (${formatNames(group.names)})${rentNote}`;
   });
 
-  return joinLines(["일비", ...lines]);
+  return formatTitledList("일비", bodies);
 }
 
 function buildMealSection(participants: Participant[]): string {
@@ -319,16 +332,14 @@ function buildMealSection(participants: Participant[]): string {
     return a.mealKey.localeCompare(b.mealKey, "ko");
   });
 
-  const paidLines = paidOrdered.map((group, index) => {
+  const paidBodies = paidOrdered.map((group) => {
     const people = group.names.length;
     const perPerson = mealPayByCount(group.mealCount);
     const total = perPerson * people;
     const mealPart = group.mealLabels.join(", ");
-    const body =
-      group.mealCount === 3
-        ? `${won(perPerson)} × ${people}명 = ${won(total)} (${group.dayIndex}일차 ${mealPart} / ${formatNames(group.names)})`
-        : `${won(MEAL_UNIT_RATE)} × ${people}명 × ${group.mealCount}식 = ${won(total)} (${group.dayIndex}일차 ${mealPart} / ${formatNames(group.names)})`;
-    return indent(1, `${hangulOrdinal(index)}. ${body}`);
+    return group.mealCount === 3
+      ? `${won(perPerson)} × ${people}명 = ${won(total)} (${group.dayIndex}일차 ${mealPart} / ${formatNames(group.names)})`
+      : `${won(MEAL_UNIT_RATE)} × ${people}명 × ${group.mealCount}식 = ${won(total)} (${group.dayIndex}일차 ${mealPart} / ${formatNames(group.names)})`;
   });
 
   const bizOrdered = [...bizGroups.values()].sort((a, b) => {
@@ -336,22 +347,15 @@ function buildMealSection(participants: Participant[]): string {
     return a.mealKey.localeCompare(b.mealKey, "ko");
   });
 
-  const bizLines = bizOrdered.map((group, index) =>
-    indent(
-      1,
-      `${hangulOrdinal(index)}. ${group.dayIndex}일차 ${group.mealLabels.join(", ")} / ${formatNames(group.names)}`,
-    ),
+  const bizBodies = bizOrdered.map(
+    (group) =>
+      `${group.dayIndex}일차 ${group.mealLabels.join(", ")} / ${formatNames(group.names)}`,
   );
 
-  const sections: string[] = [];
-  if (paidLines.length > 0) {
-    sections.push(joinLines(["식비", ...paidLines]));
-  }
-  if (bizLines.length > 0) {
-    sections.push(joinLines(["※ 사업추진비 사용", ...bizLines]));
-  }
-
-  return joinLines(sections);
+  return joinLines([
+    formatTitledList("식비", paidBodies),
+    formatTitledList("※ 사업추진비 사용", bizBodies),
+  ]);
 }
 
 function buildTransportSection(participants: Participant[]): string {
@@ -400,14 +404,30 @@ function buildTransportSection(participants: Participant[]): string {
     return a[0].localeCompare(b[0], "ko");
   });
 
+  const formatTransportItem = (item: ItemGroup) => {
+    const total = item.amount * item.people * item.times;
+    return `${won(item.amount)} × ${item.people}명 × ${item.times}회 = ${won(total)} (${formatNames(item.names)})`;
+  };
+
+  // 수단이 하나뿐이면 "가." 없이 제목에 붙입니다.
+  if (modeEntries.length === 1) {
+    const [mode, items] = modeEntries[0];
+    const itemBodies = [...items.values()].map(formatTransportItem);
+    if (itemBodies.length === 1) {
+      return `교통비: ${mode} ${itemBodies[0]}`;
+    }
+    return joinLines([
+      `교통비: ${mode}`,
+      ...itemBodies.map((body, index) =>
+        indent(1, `${index + 1}) ${body}`),
+      ),
+    ]);
+  }
+
   const modeBlocks = modeEntries.map(([mode, items], modeIndex) => {
-    const itemLines = [...items.values()].map((item, itemIndex) => {
-      const total = item.amount * item.people * item.times;
-      return indent(
-        2,
-        `${itemIndex + 1}) ${won(item.amount)} × ${item.people}명 × ${item.times}회 = ${won(total)} (${formatNames(item.names)})`,
-      );
-    });
+    const itemLines = [...items.values()].map((item, itemIndex) =>
+      indent(2, `${itemIndex + 1}) ${formatTransportItem(item)}`),
+    );
     return joinLines([
       indent(1, `${hangulOrdinal(modeIndex)}. ${mode}`),
       ...itemLines,
@@ -455,15 +475,12 @@ function buildLodgingSection(participants: Participant[]): string {
 
   if (ordered.length === 0) return "";
 
-  const lines = ordered.map((item, index) => {
+  const bodies = ordered.map((item) => {
     const total = item.amount * item.people * item.times;
-    return indent(
-      1,
-      `${hangulOrdinal(index)}. ${won(item.amount)} × ${item.people}명 × ${item.times}일 = ${won(total)} (${formatNames(item.names)})`,
-    );
+    return `${won(item.amount)} × ${item.people}명 × ${item.times}일 = ${won(total)} (${formatNames(item.names)})`;
   });
 
-  return joinLines(["숙박비", ...lines]);
+  return formatTitledList("숙박비", bodies);
 }
 
 function buildAccountSection(trip: Trip): string {
@@ -496,9 +513,13 @@ function splitAttachmentBlocks(raw: string): AttachmentBlock[] {
   for (const line of lines) {
     const isSectionStart =
       line === "일비" ||
+      line.startsWith("일비:") ||
       line === "식비" ||
+      line.startsWith("식비:") ||
       line === "교통비" ||
+      line.startsWith("교통비:") ||
       line === "숙박비" ||
+      line.startsWith("숙박비:") ||
       line.startsWith("계정과목:") ||
       line.startsWith("※ ");
 
