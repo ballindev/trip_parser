@@ -112,7 +112,7 @@ export function TripListPanel({
   };
 
   return (
-    <aside className="relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <aside className="relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       <header className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] px-4">
         <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
           출장 목록{" "}
@@ -180,10 +180,10 @@ export function TripListPanel({
             return (
               <div
                 key={trip.id}
-                className={`group relative overflow-hidden rounded-2xl border transition-all ${
+                className={`group relative overflow-hidden rounded-xl border transition-all ${
                   selected
-                    ? "border-[#93C5FD] bg-[#EFF6FF] shadow-sm"
-                    : "border-slate-200 bg-white shadow-sm hover:bg-white"
+                    ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+                    : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
                 }`}
               >
                 {selected ? (
@@ -199,22 +199,22 @@ export function TripListPanel({
                   className="w-full p-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-[#1E293B]">
+                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-[#191F28]">
                       {trip.name}
                     </h3>
-                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-[#64748B] transition-opacity group-hover:opacity-0">
+                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-[#8B95A1] transition-opacity group-hover:opacity-0">
                       {formatDateRange(trip.startDate, trip.endDate)}
                     </p>
                   </div>
                   <div className="mt-2 flex items-start justify-between gap-2">
-                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#475569]">
+                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#4E5968]">
                       {trip.summary}
                     </p>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity group-hover:opacity-0 ${
                         selected
-                          ? "bg-white text-[#3182F6]"
-                          : "bg-[#F3F4F6] text-[#64748B]"
+                          ? "bg-[#F2F8FF] text-[#3182F6]"
+                          : "bg-white text-[#8B95A1]"
                       }`}
                     >
                       {participationBadge(

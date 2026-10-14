@@ -53,7 +53,7 @@ function ParticipantCardContent({
       {selected ? (
         <span
           aria-hidden="true"
-          className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-[#3182F6]"
+          className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
         />
       ) : null}
       <div className="flex items-start justify-between gap-2 px-3 py-3">
@@ -61,9 +61,9 @@ function ParticipantCardContent({
           <PersonNameLabel
             name={participant.name}
             resigned={resigned}
-            className="block truncate text-[14px] font-bold text-[#1E293B]"
+            className="block truncate text-[14px] font-bold text-[#191F28]"
           />
-          <p className="mt-0.5 truncate text-[11px] text-[#475569]">
+          <p className="mt-0.5 truncate text-[11px] text-[#8B95A1]">
             {participant.department}
           </p>
         </div>
@@ -112,12 +112,12 @@ function SortableParticipantCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative overflow-hidden rounded-2xl border ${
+      className={`group relative overflow-hidden rounded-xl border ${
         isDragging
-          ? "z-10 border-dashed border-[#B0B8C1] bg-[#F1F5F9] opacity-40"
+          ? "z-10 border-dashed border-[#B0B8C1] bg-[#F2F4F6] opacity-40"
           : selected
-            ? "border-[#93C5FD] bg-[#EFF6FF] shadow-sm"
-            : "border-slate-200 bg-white shadow-sm hover:bg-white"
+            ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+            : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
       }`}
     >
       <button
@@ -224,7 +224,7 @@ export function ParticipantListPanel({
   };
 
   return (
-    <aside className="relative flex h-full w-[10%] min-w-[140px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <aside className="relative flex h-full w-[10%] min-w-[140px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       <header className="flex h-[56px] shrink-0 items-center justify-between gap-2 border-b border-[#E2E8F0] px-3">
         <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
           참여자{" "}
@@ -290,7 +290,7 @@ export function ParticipantListPanel({
 
             <DragOverlay dropAnimation={null}>
               {activeParticipant ? (
-                <div className="overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_8px_24px_rgba(25,31,40,0.16)]">
+                <div className="overflow-hidden rounded-xl border border-[#E5E8EB] bg-white shadow-[0_8px_24px_rgba(25,31,40,0.16)]">
                   <ParticipantCardContent
                     participant={activeParticipant}
                     resigned={isParticipantResigned(activeParticipant)}

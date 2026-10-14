@@ -402,7 +402,7 @@ export function TripReportDashboard() {
             onReorderParticipants={handleReorderParticipants}
           />
         ) : (
-          <aside className="flex h-full w-[10%] min-w-[140px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+          <aside className="flex h-full w-[10%] min-w-[140px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
             <header className="flex h-[56px] shrink-0 items-center border-b border-[#E2E8F0] px-3">
               <h2 className="truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
                 참여자
