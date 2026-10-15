@@ -2,7 +2,7 @@ import {
   calcPersonAllowances,
   collectRentHalfPersonIds,
 } from "@/lib/attachment-text";
-import { isLocalRegion } from "@/lib/attachment-rates";
+import { isLocalRegion } from "@/lib/regions";
 import { sumCostLines } from "@/lib/transport-cost";
 import type { Participant, Person, Trip } from "@/lib/types";
 

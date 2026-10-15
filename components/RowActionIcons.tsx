@@ -41,10 +41,10 @@ export function TrashIcon({ size = 18 }: { size?: number }) {
 }
 
 const actionButtonClassName =
-  "flex h-9 w-9 items-center justify-center rounded-xl text-[#8B95A1] transition-colors hover:bg-white hover:text-[#3182F6]";
+  "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-accent";
 
 const deleteButtonClassName =
-  "flex h-9 w-9 items-center justify-center rounded-xl text-[#8B95A1] transition-colors hover:bg-white hover:text-[#F04452]";
+  "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-danger";
 
 export function RowEditButton({
   label,

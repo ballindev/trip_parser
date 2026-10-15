@@ -21,7 +21,7 @@ type TripFormDialogProps = {
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-[#E5E8EB] bg-[#F9FAFB] px-3.5 py-2.5 text-[14px] text-[#191F28] outline-none transition focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15";
+  "w-full rounded-xl border border-edge bg-surface-subtle px-3.5 py-2.5 text-[14px] text-ink outline-none transition focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15";
 
 function resolveDurationMode(
   startDate: string,
@@ -118,21 +118,21 @@ export function TripFormDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="trip-form-title"
-        className="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+        className="w-full max-w-[480px] rounded-2xl bg-surface p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
       >
         <h3
           id="trip-form-title"
-          className="text-[17px] font-bold text-[#191F28]"
+          className="text-[17px] font-bold text-ink"
         >
           {mode === "create" ? "출장 추가" : "출장 수정"}
         </h3>
-        <p className="mt-1 text-[13px] text-[#8B95A1]">
+        <p className="mt-1 text-[13px] text-ink-subtle">
           출장 정보와 일정을 입력해 주세요.
         </p>
 
         <div className="mt-5 space-y-4">
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+            <label className="mb-1.5 block text-[13px] font-semibold text-ink-secondary">
               출장명
             </label>
             <input
@@ -148,7 +148,7 @@ export function TripFormDialog({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+            <label className="mb-1.5 block text-[13px] font-semibold text-ink-secondary">
               계정과목 (적요)
             </label>
             <input
@@ -163,10 +163,10 @@ export function TripFormDialog({
           </div>
 
           <div>
-            <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+            <label className="mb-1.5 block text-[13px] font-semibold text-ink-secondary">
               일정 유형
             </label>
-            <div className="flex rounded-xl bg-[#F2F4F6] p-1">
+            <div className="flex rounded-xl bg-surface-muted p-1">
               {(
                 [
                   { value: "sameDay", label: "당일" },
@@ -181,8 +181,8 @@ export function TripFormDialog({
                     onClick={() => handleDurationModeChange(option.value)}
                     className={`flex-1 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors ${
                       selected
-                        ? "bg-white text-[#3182F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
-                        : "text-[#8B95A1] hover:text-[#4E5968]"
+                        ? "bg-surface text-accent shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+                        : "text-ink-subtle hover:text-ink-secondary"
                     }`}
                   >
                     {option.label}
@@ -229,7 +229,7 @@ export function TripFormDialog({
           )}
 
           {error ? (
-            <p className="text-[13px] font-medium text-[#F04452]">{error}</p>
+            <p className="text-[13px] font-medium text-danger">{error}</p>
           ) : null}
         </div>
 
@@ -237,14 +237,14 @@ export function TripFormDialog({
           <button
             type="button"
             onClick={handleConfirm}
-            className="rounded-xl bg-[#3182F6] px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#1B64DA]"
+            className="rounded-xl bg-accent px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-accent-hover"
           >
             확인
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl bg-[#F2F4F6] px-4 py-3 text-[14px] font-bold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+            className="rounded-xl bg-surface-muted px-4 py-3 text-[14px] font-bold text-ink-secondary transition-colors hover:bg-edge"
           >
             취소
           </button>

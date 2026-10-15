@@ -2,9 +2,12 @@ import { jsonError, jsonOk, readJson } from "@/lib/api/http";
 import { mapPerson, type DbPerson } from "@/lib/mappers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+// 정렬·소속 규칙: lib/directory-ordering.md
+
 export async function GET() {
   try {
     const supabase = getSupabaseServerClient();
+    // people.sort_order = 디렉터리 「전체」탭 전역 순서
     const { data, error } = await supabase
       .from("people")
       .select("*")
@@ -80,6 +83,7 @@ export async function POST(request: Request) {
   }
 }
 
+/** 전역 인원 순서만 갱신 (`people.sort_order`). 팀 내 순서는 건드리지 않음. */
 export async function PATCH(request: Request) {
   try {
     const body = await readJson<{ orderedIds?: string[] }>(request);

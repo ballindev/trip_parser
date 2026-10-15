@@ -10,8 +10,10 @@ import {
   RowEditButton,
 } from "@/components/RowActionIcons";
 import { formatDateRange, participationBadge } from "@/lib/format";
+import { listCardClassName } from "@/lib/list-card-styles";
 import type { Trip } from "@/lib/types";
 import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
+import { uiPanel, uiPanelHeader } from "@/lib/ui-tokens";
 
 function todayIsoDate() {
   const now = new Date();
@@ -112,17 +114,21 @@ export function TripListPanel({
   };
 
   return (
-    <aside className="relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden rounded-2xl border border-[#E2E8F0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-      <header className="flex h-[56px] shrink-0 items-center justify-between gap-3 border-b border-[#E2E8F0] px-4">
-        <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-[#1E293B]">
+    <aside
+      className={`relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden ${uiPanel}`}
+    >
+      <header
+        className={`flex h-[56px] shrink-0 items-center justify-between gap-3 ${uiPanelHeader} px-4`}
+      >
+        <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-ink">
           출장 목록{" "}
-          <span className="font-medium text-[#64748B]">({trips.length})</span>
+          <span className="font-medium text-ink-subtle">({trips.length})</span>
         </h2>
         <button
           type="button"
           onClick={handleOpenCreate}
           aria-label="출장 추가"
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#3182F6] text-lg font-bold leading-none text-white transition-colors hover:bg-[#1B64DA]"
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-lg font-bold leading-none text-white transition-colors hover:bg-accent-hover"
         >
           +
         </button>
@@ -136,14 +142,14 @@ export function TripListPanel({
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="출장명, 적요, 일정 검색"
             aria-label="출장 검색"
-            className="h-full w-full rounded-xl border border-gray-300 bg-white px-3 pr-9 text-[13px] text-[#1E293B] outline-none transition placeholder:text-[#64748B] focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
+            className="h-full w-full rounded-xl border border-edge bg-surface px-3 pr-9 text-[13px] text-ink outline-none transition placeholder:text-ink-subtle focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
           />
           {searchQuery ? (
             <button
               type="button"
               onClick={() => setSearchQuery("")}
               aria-label="검색어 지우기"
-              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-[#64748B] transition-colors hover:bg-[#F1F5F9] hover:text-[#64748B]"
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink-subtle"
             >
               ×
             </button>
@@ -153,20 +159,20 @@ export function TripListPanel({
 
       <div className="flex-1 space-y-2.5 overflow-y-auto px-4 pb-4">
         {trips.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center shadow-sm">
-            <p className="text-[13px] font-semibold text-[#64748B]">
+          <div className="rounded-2xl border border-edge bg-surface px-4 py-8 text-center shadow-sm">
+            <p className="text-[13px] font-semibold text-ink-subtle">
               등록된 출장이 없습니다
             </p>
-            <p className="mt-1 text-[12px] text-[#64748B]">
+            <p className="mt-1 text-[12px] text-ink-subtle">
               + 버튼으로 출장을 추가해 주세요
             </p>
           </div>
         ) : filteredTrips.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-8 text-center shadow-sm">
-            <p className="text-[13px] font-semibold text-[#64748B]">
+          <div className="rounded-2xl border border-edge bg-surface px-4 py-8 text-center shadow-sm">
+            <p className="text-[13px] font-semibold text-ink-subtle">
               검색 결과가 없습니다
             </p>
-            <p className="mt-1 text-[12px] text-[#64748B]">
+            <p className="mt-1 text-[12px] text-ink-subtle">
               다른 키워드로 다시 검색해 주세요
             </p>
           </div>
@@ -180,16 +186,15 @@ export function TripListPanel({
             return (
               <div
                 key={trip.id}
-                className={`group relative overflow-hidden rounded-xl border transition-all ${
-                  selected
-                    ? "border-[#D1D6DB] bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(25,31,40,0.12),0_2px_6px_rgba(25,31,40,0.10)]"
-                    : "border-transparent bg-[#F2F4F6] hover:bg-[#EBEDEF]"
-                }`}
+                className={listCardClassName({
+                  selected,
+                  withTransition: true,
+                })}
               >
                 {selected ? (
                   <span
                     aria-hidden="true"
-                    className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-[#3182F6]"
+                    className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-accent"
                   />
                 ) : null}
                 <button
@@ -199,22 +204,22 @@ export function TripListPanel({
                   className="w-full p-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-[#191F28]">
+                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-ink">
                       {trip.name}
                     </h3>
-                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-[#8B95A1] transition-opacity group-hover:opacity-0">
+                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-ink-subtle transition-opacity group-hover:opacity-0">
                       {formatDateRange(trip.startDate, trip.endDate)}
                     </p>
                   </div>
                   <div className="mt-2 flex items-start justify-between gap-2">
-                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-[#4E5968]">
+                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-ink-secondary">
                       {trip.summary}
                     </p>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity group-hover:opacity-0 ${
                         selected
-                          ? "bg-[#F2F8FF] text-[#3182F6]"
-                          : "bg-white text-[#8B95A1]"
+                          ? "bg-selected text-accent"
+                          : "bg-surface text-ink-subtle"
                       }`}
                     >
                       {participationBadge(
@@ -240,12 +245,12 @@ export function TripListPanel({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[#E2E8F0] px-4 py-3">
+      <div className="shrink-0 border-t border-edge px-4 py-3">
         <button
           type="button"
           onClick={onOpenAttachment}
           disabled={!selectedTrip}
-          className="flex w-full items-center justify-center rounded-xl bg-[#3182F6] px-3 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA] disabled:cursor-not-allowed disabled:bg-[#F1F5F9] disabled:text-[#64748B]"
+          className="flex w-full items-center justify-center rounded-xl bg-accent px-3 py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-ink-subtle"
         >
           붙임 자료 생성
         </button>
@@ -275,16 +280,16 @@ export function TripListPanel({
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-trip-title"
-            className="w-full max-w-[360px] rounded-2xl bg-white p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+            className="w-full max-w-[360px] rounded-2xl bg-surface p-6 shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
           >
             <h3
               id="delete-trip-title"
-              className="text-[17px] font-bold text-[#1E293B]"
+              className="text-[17px] font-bold text-ink"
             >
               출장을 삭제할까요?
             </h3>
-            <p className="mt-2 text-[14px] leading-6 text-[#64748B]">
-              <span className="font-semibold text-[#1E293B]">
+            <p className="mt-2 text-[14px] leading-6 text-ink-subtle">
+              <span className="font-semibold text-ink">
                 {deleteTarget.name}
               </span>
               을(를) 목록에서 삭제합니다. 참여자 데이터도 함께 삭제되며 복구할
@@ -294,14 +299,14 @@ export function TripListPanel({
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="rounded-xl bg-[#F04452] px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-[#D93A47]"
+                className="rounded-xl bg-danger px-4 py-3 text-[14px] font-bold text-white transition-colors hover:bg-danger-hover"
               >
                 삭제
               </button>
               <button
                 type="button"
                 onClick={handleCancelDelete}
-                className="rounded-xl bg-[#F1F5F9] px-4 py-3 text-[14px] font-bold text-[#64748B] transition-colors hover:bg-[#E2E8F0]"
+                className="rounded-xl bg-surface-muted px-4 py-3 text-[14px] font-bold text-ink-subtle transition-colors hover:bg-edge"
               >
                 취소
               </button>

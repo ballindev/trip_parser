@@ -123,7 +123,7 @@ export function DatePicker({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       {label ? (
-        <label className="mb-1.5 block text-[13px] font-semibold text-[#4E5968]">
+        <label className="mb-1.5 block text-[13px] font-semibold text-ink-secondary">
           {label}
         </label>
       ) : null}
@@ -134,12 +134,12 @@ export function DatePicker({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-left text-[14px] text-[#1E293B] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15"
+        className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-left text-[14px] text-ink outline-none transition hover:bg-surface focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
       >
-        <span className={`min-w-0 truncate ${value ? "font-medium" : "text-[#8B95A1]"}`}>
+        <span className={`min-w-0 truncate ${value ? "font-medium" : "text-ink-subtle"}`}>
           {value ? formatDisplayDate(value) : placeholder}
         </span>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#F2F4F6] text-[#4E5968]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-secondary">
           <svg
             width="16"
             height="16"
@@ -177,7 +177,7 @@ export function DatePicker({
           id={listboxId}
           role="dialog"
           aria-label={label ?? "날짜 선택"}
-          className={`absolute top-[calc(100%+8px)] z-[60] w-[288px] rounded-2xl border border-[#E5E8EB] bg-white p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)] ${
+          className={`absolute top-[calc(100%+8px)] z-[60] w-[288px] rounded-2xl border border-edge bg-surface p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)] ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >
@@ -186,16 +186,16 @@ export function DatePicker({
               type="button"
               aria-label="이전 달"
               onClick={() => setViewMonth((current) => addMonths(current, -1))}
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2F4F6] text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted text-ink-secondary transition-colors hover:bg-edge"
             >
               ‹
             </button>
-            <p className="text-[14px] font-bold text-[#191F28]">{monthLabel}</p>
+            <p className="text-[14px] font-bold text-ink">{monthLabel}</p>
             <button
               type="button"
               aria-label="다음 달"
               onClick={() => setViewMonth((current) => addMonths(current, 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2F4F6] text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-muted text-ink-secondary transition-colors hover:bg-edge"
             >
               ›
             </button>
@@ -207,10 +207,10 @@ export function DatePicker({
                 key={weekday}
                 className={`py-1 text-center text-[11px] font-semibold ${
                   weekday === "일"
-                    ? "text-[#F04452]"
+                    ? "text-danger"
                     : weekday === "토"
-                      ? "text-[#3182F6]"
-                      : "text-[#8B95A1]"
+                      ? "text-accent"
+                      : "text-ink-subtle"
                 }`}
               >
                 {weekday}
@@ -241,14 +241,14 @@ export function DatePicker({
                   }}
                   className={`flex h-9 w-full items-center justify-center rounded-xl text-[13px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
                     selected
-                      ? "bg-[#3182F6] text-white shadow-[0_4px_12px_rgba(49,130,246,0.28)]"
+                      ? "bg-accent text-white shadow-[0_4px_12px_rgba(49,130,246,0.28)]"
                       : isToday
-                        ? "bg-[#F2F8FF] text-[#3182F6] hover:bg-[#E8F3FF]"
+                        ? "bg-selected text-accent hover:bg-selected-hover"
                         : weekday === 0
-                          ? "text-[#F04452] hover:bg-[#F2F4F6]"
+                          ? "text-danger hover:bg-surface-muted"
                           : weekday === 6
-                            ? "text-[#3182F6] hover:bg-[#F2F4F6]"
-                            : "text-[#191F28] hover:bg-[#F2F4F6]"
+                            ? "text-accent hover:bg-surface-muted"
+                            : "text-ink hover:bg-surface-muted"
                   }`}
                 >
                   {day.getDate()}

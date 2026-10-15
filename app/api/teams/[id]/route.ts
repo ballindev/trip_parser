@@ -1,4 +1,8 @@
 import { jsonError, jsonOk, readJson } from "@/lib/api/http";
+import {
+  TEAM_DELETE_BLOCKED_MESSAGE,
+  canHardDeleteByHistoryCount,
+} from "@/lib/directory-delete-guards";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type Params = { params: Promise<{ id: string }> };
@@ -19,6 +23,7 @@ export async function PATCH(request: Request, { params }: Params) {
       if (error) return jsonError(error.message, 500);
     }
 
+    // memberIds 배열 순서 = team_members.sort_order (팀별 탭). people.sort_order와 무관.
     if (body.memberIds !== undefined) {
       await supabase.from("team_members").delete().eq("team_id", id);
       if (body.memberIds.length > 0) {
@@ -84,11 +89,8 @@ export async function DELETE(_request: Request, { params }: Params) {
         .select("id", { count: "exact", head: true })
         .in("person_id", memberIds);
       if (historyError) return jsonError(historyError.message, 500);
-      if ((count ?? 0) > 0) {
-        return jsonError(
-          "출장 이력이 있는 팀원이 있어 팀을 삭제할 수 없습니다.",
-          400,
-        );
+      if (!canHardDeleteByHistoryCount(count ?? 0)) {
+        return jsonError(TEAM_DELETE_BLOCKED_MESSAGE, 400);
       }
     }
 

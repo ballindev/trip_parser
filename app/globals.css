@@ -1,22 +1,116 @@
 @import "tailwindcss";
 
+/**
+ * Single palette: Toss cool-gray + blue.
+ * Slate leftovers (#1E293B, #64748B, #E2E8F0, #F8FAFC, #F1F5F9) map here.
+ */
 :root {
+  /* Surfaces */
   --background: #f2f4f6;
   --foreground: #191f28;
-  --toss-blue: #3182f6;
-  --toss-blue-dark: #1b64da;
-  --toss-gray-100: #f9fafb;
-  --toss-gray-200: #f2f4f6;
-  --toss-gray-300: #e5e8eb;
-  --toss-gray-500: #8b95a1;
-  --toss-gray-700: #4e5968;
-  --toss-gray-900: #191f28;
+  --surface: #ffffff;
+  --surface-subtle: #f9fafb;
+  --surface-muted: #f2f4f6;
+  --surface-inset: #e5e8eb;
+  --surface-muted-hover: #ebedef;
+
+  /* Borders */
+  --edge: #e5e8eb;
+  --edge-strong: #d1d6db;
+  --edge-drag: #b0b8c1;
+  --edge-selected: #d6e8ff;
+
+  /* Selection */
+  --selected: #f2f8ff;
+  --selected-hover: #e8f3ff;
+
+  /* Accent */
+  --accent: #3182f6;
+  --accent-hover: #1b64da;
+
+  /* Ink — 3 steps only */
+  --ink: #191f28;
+  --ink-secondary: #4e5968;
+  --ink-subtle: #8b95a1;
+
+  /* Danger / warning / success */
+  --danger: #f04452;
+  --danger-hover: #d93a47;
+  --danger-soft: #fff5f6;
+  --danger-soft-hover: #ffe5e7;
+  --danger-edge: #ffd4d8;
+  --warning-soft: #fff7ed;
+  --warning-edge: #fed7aa;
+  --warning-ink: #8a6116;
+  --warning-ink-strong: #9a3412;
+  --warning-ink-emphasis: #c2410c;
+  --warning-banner: #fff8e8;
+  --success: #03b26c;
+  --success-soft: #e8f8f0;
+
+  /* Compat aliases → canonical Toss tokens */
+  --surface-canvas: var(--surface-subtle);
+  --surface-ghost: var(--surface-muted);
+  --edge-muted: var(--edge);
+  --ink-strong: var(--ink);
+  --ink-muted: var(--ink-subtle);
+
+  --toss-blue: var(--accent);
+  --toss-blue-dark: var(--accent-hover);
+  --toss-gray-100: var(--surface-subtle);
+  --toss-gray-200: var(--surface-muted);
+  --toss-gray-300: var(--edge);
+  --toss-gray-500: var(--ink-subtle);
+  --toss-gray-700: var(--ink-secondary);
+  --toss-gray-900: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-inset: var(--surface-inset);
+  --color-surface-muted-hover: var(--surface-muted-hover);
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-ghost: var(--surface-ghost);
+
+  --color-edge: var(--edge);
+  --color-edge-muted: var(--edge-muted);
+  --color-edge-strong: var(--edge-strong);
+  --color-edge-drag: var(--edge-drag);
+  --color-edge-selected: var(--edge-selected);
+
+  --color-selected: var(--selected);
+  --color-selected-hover: var(--selected-hover);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-strong: var(--ink-strong);
+  --color-ink-muted: var(--ink-muted);
+
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-hover: var(--danger-soft-hover);
+  --color-danger-edge: var(--danger-edge);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-edge: var(--warning-edge);
+  --color-warning-ink: var(--warning-ink);
+  --color-warning-ink-strong: var(--warning-ink-strong);
+  --color-warning-ink-emphasis: var(--warning-ink-emphasis);
+  --color-warning-banner: var(--warning-banner);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+
   --color-toss-blue: var(--toss-blue);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -38,7 +132,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d6db;
+  background: var(--edge-strong);
   border-radius: 999px;
 }
 

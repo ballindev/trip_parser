@@ -1,4 +1,8 @@
 import { jsonError, jsonOk, readJson } from "@/lib/api/http";
+import {
+  PERSON_DELETE_BLOCKED_MESSAGE,
+  canHardDeleteByHistoryCount,
+} from "@/lib/directory-delete-guards";
 import { mapPerson, type DbPerson } from "@/lib/mappers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -91,7 +95,8 @@ export async function PATCH(request: Request, { params }: Params) {
       const currentTeamId = (currentMembership?.team_id as string | undefined) ?? "";
       const sameTeam = Boolean(body.teamId) && body.teamId === currentTeamId;
 
-      // 팀이 그대로면 팀 내 순서를 유지합니다.
+      // 같은 팀이면 membership/sort_order 유지. 팀 변경 시에만 재배정(맨 뒤).
+      // 규칙: lib/directory-ordering.md
       if (!sameTeam) {
         await supabase.from("team_members").delete().eq("person_id", id);
         if (body.teamId) {
@@ -136,11 +141,8 @@ export async function DELETE(_request: Request, { params }: Params) {
       .eq("person_id", id);
 
     if (historyError) return jsonError(historyError.message, 500);
-    if ((count ?? 0) > 0) {
-      return jsonError(
-        "출장 이력이 있는 인원은 삭제할 수 없습니다. 퇴사 처리해 주세요.",
-        400,
-      );
+    if (!canHardDeleteByHistoryCount(count ?? 0)) {
+      return jsonError(PERSON_DELETE_BLOCKED_MESSAGE, 400);
     }
 
     const { error } = await supabase.from("people").delete().eq("id", id);

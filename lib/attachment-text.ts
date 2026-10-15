@@ -1,12 +1,12 @@
 import {
   dailyAllowanceForDay,
-  isLocalRegion,
   lodgingCapForRegion,
   mealPayByCount,
   MEAL_UNIT_RATE,
 } from "@/lib/attachment-rates";
 import { eligibleMeals } from "@/lib/daily-meals";
 import { formatCurrency } from "@/lib/format";
+import { isLocalRegion } from "@/lib/regions";
 import { calcCostLineTotal } from "@/lib/transport-cost";
 import type {
   DailyMeal,
@@ -51,7 +51,7 @@ function indent(level: 1 | 2, text: string): string {
 /**
  * 하위 항목이 1개면 "제목: 내용", 2개 이상이면 제목 + 가/나/다 목록으로 만듭니다.
  */
-function formatTitledList(title: string, bodies: string[]): string {
+export function formatTitledList(title: string, bodies: string[]): string {
   if (bodies.length === 0) return "";
   if (bodies.length === 1) {
     return `${title}: ${bodies[0]}`;

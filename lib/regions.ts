@@ -1,4 +1,10 @@
-/** 출장 지역: 관내(서울) / 관외 */
+/**
+ * 지역 도메인 (관내/관외 식별).
+ *
+ * - 여기: `REGION_*`, `normalizeRegion`, `isLocalRegion`
+ * - 단가·한도 계산: `@/lib/attachment-rates` (`dailyAllowanceForDay`, `lodgingCapForRegion` …)
+ *   → rates 모듈이 `isLocalRegion`을 내부에서 쓰더라도, UI/검증은 이 파일에서 import 하세요.
+ */
 export const REGION_LOCAL = "관내(서울)";
 export const REGION_REMOTE = "관외";
 
@@ -13,4 +19,9 @@ export function normalizeRegion(region: string): string {
   if (trimmed === REGION_LOCAL || trimmed === REGION_REMOTE) return trimmed;
   if (trimmed === "서울특별시") return REGION_LOCAL;
   return REGION_REMOTE;
+}
+
+/** 관내(서울) 여부. 정규화 후 `REGION_LOCAL`과 비교합니다. */
+export function isLocalRegion(region: string): boolean {
+  return normalizeRegion(region) === REGION_LOCAL;
 }

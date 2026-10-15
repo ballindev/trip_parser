@@ -1,4 +1,4 @@
-import { isLocalRegion } from "@/lib/attachment-rates";
+import { isLocalRegion } from "@/lib/regions";
 import {
   createCostItemId,
   withTransportPeople,

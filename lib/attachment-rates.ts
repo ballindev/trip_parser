@@ -1,6 +1,11 @@
-import { REGION_LOCAL, normalizeRegion } from "@/lib/regions";
+import { isLocalRegion } from "@/lib/regions";
 
-/** 출장복명서 붙임 자료 단가·한도 (원) */
+/**
+ * 출장복명서 붙임 자료 단가·한도 (원).
+ * 관내/관외 판별(`isLocalRegion`)은 `@/lib/regions`가 소스 오브 트루스입니다.
+ */
+
+export { isLocalRegion } from "@/lib/regions";
 
 export const MEAL_UNIT_RATE = 8_300;
 
@@ -45,10 +50,6 @@ const LEGACY_METRO_REGIONS = new Set([
   "대전광역시",
   "울산광역시",
 ]);
-
-export function isLocalRegion(region: string): boolean {
-  return normalizeRegion(region) === REGION_LOCAL;
-}
 
 export function lodgingCapForRegion(region: string): number {
   if (isLocalRegion(region)) return LODGING_CAP.seoul;

@@ -103,7 +103,7 @@ export function TimePicker({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       {label ? (
-        <label className="mb-1.5 block text-center text-[12px] font-semibold text-[#8B95A1]">
+        <label className="mb-1.5 block text-center text-[12px] font-semibold text-ink-subtle">
           {label}
         </label>
       ) : null}
@@ -116,11 +116,11 @@ export function TimePicker({
         onClick={() => setOpen((current) => !current)}
         className={`flex h-11 w-full items-center justify-center gap-1 rounded-xl border px-3 text-[14px] font-semibold tabular-nums outline-none transition ${
           open
-            ? "border-[#3182F6] bg-white ring-2 ring-[#3182F6]/15"
-            : "border-gray-300 bg-white hover:bg-white"
+            ? "border-accent bg-surface ring-2 ring-accent/15"
+            : "border-edge bg-surface hover:bg-surface"
         }`}
       >
-        <span className={parsed ? "text-[#1E293B]" : "text-[#64748B]"}>
+        <span className={parsed ? "text-ink" : "text-ink-subtle"}>
           {parsed ? `${parsed.hour}:${parsed.minute}` : placeholder}
         </span>
       </button>
@@ -130,19 +130,19 @@ export function TimePicker({
           id={panelId}
           role="dialog"
           aria-label={label ?? "시간 선택"}
-          className="absolute left-1/2 top-[calc(100%+8px)] z-[60] w-[200px] -translate-x-1/2 rounded-2xl border border-[#E5E8EB] bg-white p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
+          className="absolute left-1/2 top-[calc(100%+8px)] z-[60] w-[200px] -translate-x-1/2 rounded-2xl border border-edge bg-surface p-3 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
         >
-          <p className="mb-2 text-center text-[12px] font-semibold text-[#8B95A1]">
+          <p className="mb-2 text-center text-[12px] font-semibold text-ink-subtle">
             스크롤해서 선택
           </p>
           <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-2">
             <div>
-              <p className="mb-1 text-center text-[11px] font-bold text-[#8B95A1]">
+              <p className="mb-1 text-center text-[11px] font-bold text-ink-subtle">
                 시
               </p>
               <div
                 ref={hourListRef}
-                className="h-[168px] overflow-y-auto rounded-xl bg-[#F9FAFB] py-1 [scrollbar-width:thin]"
+                className="h-[168px] overflow-y-auto rounded-xl bg-surface-subtle py-1 [scrollbar-width:thin]"
               >
                 {HOURS.map((item) => {
                   const selected = draftHour === item;
@@ -157,8 +157,8 @@ export function TimePicker({
                       }}
                       className={`flex w-full items-center justify-center py-2 text-[14px] font-semibold tabular-nums transition-colors ${
                         selected
-                          ? "bg-[#E8F3FF] text-[#3182F6]"
-                          : "text-[#4E5968] hover:bg-[#F2F4F6]"
+                          ? "bg-selected-hover text-accent"
+                          : "text-ink-secondary hover:bg-surface-muted"
                       }`}
                     >
                       {item}
@@ -168,17 +168,17 @@ export function TimePicker({
               </div>
             </div>
 
-            <div className="flex items-center pb-1 pt-5 text-[16px] font-bold text-[#8B95A1]">
+            <div className="flex items-center pb-1 pt-5 text-[16px] font-bold text-ink-subtle">
               :
             </div>
 
             <div>
-              <p className="mb-1 text-center text-[11px] font-bold text-[#8B95A1]">
+              <p className="mb-1 text-center text-[11px] font-bold text-ink-subtle">
                 분
               </p>
               <div
                 ref={minuteListRef}
-                className="h-[168px] overflow-y-auto rounded-xl bg-[#F9FAFB] py-1 [scrollbar-width:thin]"
+                className="h-[168px] overflow-y-auto rounded-xl bg-surface-subtle py-1 [scrollbar-width:thin]"
               >
                 {MINUTES.map((item) => {
                   const selected = draftMinute === item;
@@ -194,8 +194,8 @@ export function TimePicker({
                       }}
                       className={`flex w-full items-center justify-center py-2 text-[14px] font-semibold tabular-nums transition-colors ${
                         selected
-                          ? "bg-[#E8F3FF] text-[#3182F6]"
-                          : "text-[#4E5968] hover:bg-[#F2F4F6]"
+                          ? "bg-selected-hover text-accent"
+                          : "text-ink-secondary hover:bg-surface-muted"
                       }`}
                     >
                       {item}
@@ -212,7 +212,7 @@ export function TimePicker({
               commit(draftHour, draftMinute);
               setOpen(false);
             }}
-            className="mt-3 w-full rounded-xl bg-[#3182F6] py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-[#1B64DA]"
+            className="mt-3 w-full rounded-xl bg-accent py-2.5 text-[13px] font-bold text-white transition-colors hover:bg-accent-hover"
           >
             확인
           </button>

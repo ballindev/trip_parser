@@ -14,7 +14,7 @@ export function PersonNameLabel({
     <span className={className}>
       {name}
       {resigned ? (
-        <span className="ml-1 text-[11px] font-medium text-[#F04452]">
+        <span className="ml-1 text-[11px] font-medium text-danger">
           (퇴사)
         </span>
       ) : null}

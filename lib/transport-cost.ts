@@ -74,15 +74,9 @@ export function calcCostLineTotal(item: CostLineItem): number {
   return Math.max(0, amount) * Math.max(0, people) * Math.max(0, times);
 }
 
-/** @deprecated use calcCostLineTotal */
-export const calcTransportItemTotal = calcCostLineTotal;
-
 export function sumCostLines(
   items: CostLineItem[] | null | undefined,
 ): number {
   if (!items?.length) return 0;
   return items.reduce((sum, item) => sum + calcCostLineTotal(item), 0);
 }
-
-/** @deprecated use sumCostLines */
-export const sumTransportCost = sumCostLines;

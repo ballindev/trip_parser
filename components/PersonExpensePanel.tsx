@@ -53,20 +53,20 @@ function TripAmountRow({
     <div
       className={`rounded-lg px-3 py-2 ${
         nested
-          ? "bg-white/80 ring-1 ring-[#E5E8EB]"
-          : "rounded-xl bg-[#F9FAFB] py-2.5"
+          ? "bg-surface/80 ring-1 ring-edge"
+          : "rounded-xl bg-surface-subtle py-2.5"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <p
-          className={`min-w-0 flex-1 truncate font-bold text-[#191F28] ${
+          className={`min-w-0 flex-1 truncate font-bold text-ink ${
             nested ? "text-[12px]" : "text-[13px]"
           }`}
         >
           {item.tripName}
         </p>
         <p
-          className={`shrink-0 font-bold text-[#191F28] ${
+          className={`shrink-0 font-bold text-ink ${
             nested ? "text-[12px]" : "text-[13px]"
           }`}
         >
@@ -74,7 +74,7 @@ function TripAmountRow({
         </p>
       </div>
       <p
-        className={`mt-0.5 text-[#8B95A1] ${
+        className={`mt-0.5 text-ink-subtle ${
           nested ? "text-[11px]" : "text-[12px]"
         }`}
       >
@@ -89,7 +89,7 @@ function PeriodGroupList({ groups }: { groups: PersonExpensePeriodGroup[] }) {
 
   if (groups.length === 0) {
     return (
-      <p className="px-2 py-8 text-center text-[13px] text-[#8B95A1]">
+      <p className="px-2 py-8 text-center text-[13px] text-ink-subtle">
         완료된 출장비가 없습니다
       </p>
     );
@@ -104,14 +104,14 @@ function PeriodGroupList({ groups }: { groups: PersonExpensePeriodGroup[] }) {
             <div
               className={`relative overflow-hidden rounded-xl border transition-all ${
                 expanded
-                  ? "border-[#E5E8EB] bg-white shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
-                  : "border-transparent bg-[#F9FAFB] hover:bg-[#F2F4F6]"
+                  ? "border-edge bg-surface shadow-[0_1px_2px_rgba(25,31,40,0.04),0_8px_20px_rgba(25,31,40,0.08)]"
+                  : "border-transparent bg-surface-subtle hover:bg-surface-muted"
               }`}
             >
               {expanded ? (
                 <span
                   aria-hidden="true"
-                  className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-[#3182F6]"
+                  className="absolute top-2 bottom-2 left-0 w-1 rounded-r-full bg-accent"
                 />
               ) : null}
               <button
@@ -127,27 +127,27 @@ function PeriodGroupList({ groups }: { groups: PersonExpensePeriodGroup[] }) {
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-colors ${
                     expanded
-                      ? "bg-[#F2F8FF] text-[#3182F6]"
-                      : "bg-[#EEF0F2] text-[#8B95A1]"
+                      ? "bg-selected text-accent"
+                      : "bg-surface-inset text-ink-subtle"
                   }`}
                 >
                   <ChevronIcon expanded={expanded} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13px] font-bold text-[#191F28]">
+                  <p className="text-[13px] font-bold text-ink">
                     {group.label}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-[#8B95A1]">
+                  <p className="mt-0.5 text-[12px] text-ink-subtle">
                     {group.count}건
                   </p>
                 </div>
-                <p className="shrink-0 text-[13px] font-bold text-[#191F28]">
+                <p className="shrink-0 text-[13px] font-bold text-ink">
                   {formatCurrency(group.total)}원
                 </p>
               </button>
             </div>
             {expanded ? (
-              <div className="relative ml-3 mt-1.5 space-y-1.5 border-l-2 border-[#D1D6DB] py-0.5 pl-3">
+              <div className="relative ml-3 mt-1.5 space-y-1.5 border-l-2 border-edge-strong py-0.5 pl-3">
                 {group.items.map((item) => (
                   <TripAmountRow
                     key={item.participantId}
@@ -177,17 +177,17 @@ export function PersonExpensePanel({
   }, [person, trips, people]);
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#E5E8EB] bg-white">
-      <header className="flex h-[56px] shrink-0 items-center gap-2 border-b border-[#E5E8EB] px-4">
-        <h3 className="text-[15px] font-bold text-[#191F28]">출장비 누적 현황</h3>
-        <p className="text-[12px] font-medium text-[#8B95A1]">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-edge bg-surface">
+      <header className="flex h-[56px] shrink-0 items-center gap-2 border-b border-edge px-4">
+        <h3 className="text-[15px] font-bold text-ink">출장비 누적 현황</h3>
+        <p className="text-[12px] font-medium text-ink-subtle">
           제출 완료 건만 집계됩니다.
         </p>
       </header>
 
       {!person || !summary ? (
         <div className="flex flex-1 items-center justify-center px-4 py-12">
-          <p className="text-center text-[13px] leading-5 text-[#8B95A1]">
+          <p className="text-center text-[13px] leading-5 text-ink-subtle">
             사람을 선택하면
             <br />
             누적 금액을 확인할 수 있습니다
@@ -195,29 +195,29 @@ export function PersonExpensePanel({
         </div>
       ) : (
         <>
-          <div className="shrink-0 border-b border-[#E5E8EB] px-4 py-3">
+          <div className="shrink-0 border-b border-edge px-4 py-3">
             <p className="flex min-w-0 items-baseline gap-1.5">
               <PersonNameLabel
                 name={person.name}
                 resigned={isResignedPerson(person)}
-                className="truncate text-[14px] font-bold text-[#191F28]"
+                className="truncate text-[14px] font-bold text-ink"
               />
               {person.rank ? (
-                <span className="shrink-0 text-[12px] font-medium text-[#8B95A1]">
+                <span className="shrink-0 text-[12px] font-medium text-ink-subtle">
                   {person.rank}
                 </span>
               ) : null}
             </p>
-            <p className="mt-1 text-[18px] font-bold tracking-tight text-[#191F28]">
+            <p className="mt-1 text-[18px] font-bold tracking-tight text-ink">
               {formatCurrency(summary.total)}원
             </p>
-            <p className="mt-0.5 text-[12px] text-[#8B95A1]">
+            <p className="mt-0.5 text-[12px] text-ink-subtle">
               완료 {summary.count}건
             </p>
           </div>
 
           <div className="shrink-0 px-3 pt-3">
-            <div className="flex rounded-xl bg-[#F2F4F6] p-1">
+            <div className="flex rounded-xl bg-surface-muted p-1">
               {(
                 [
                   { value: "trip", label: "건별" },
@@ -233,8 +233,8 @@ export function PersonExpensePanel({
                     onClick={() => setMode(option.value)}
                     className={`flex-1 rounded-lg px-2 py-1.5 text-[12px] font-bold transition-colors ${
                       selected
-                        ? "bg-white text-[#3182F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
-                        : "text-[#8B95A1] hover:text-[#4E5968]"
+                        ? "bg-surface text-accent shadow-[0_1px_4px_rgba(0,0,0,0.08)]"
+                        : "text-ink-subtle hover:text-ink-secondary"
                     }`}
                   >
                     {option.label}
@@ -247,7 +247,7 @@ export function PersonExpensePanel({
           <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
             {mode === "trip" ? (
               summary.items.length === 0 ? (
-                <p className="px-2 py-8 text-center text-[13px] text-[#8B95A1]">
+                <p className="px-2 py-8 text-center text-[13px] text-ink-subtle">
                   완료된 출장비가 없습니다
                 </p>
               ) : (

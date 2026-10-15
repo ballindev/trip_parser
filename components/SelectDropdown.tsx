@@ -114,7 +114,7 @@ export function SelectDropdown({
             role="listbox"
             aria-label={label ?? placeholder}
             style={menuStyle}
-            className="max-h-[280px] overflow-y-auto rounded-2xl border border-[#E5E8EB] bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
+            className="max-h-[280px] overflow-y-auto rounded-2xl border border-edge bg-surface p-2 shadow-[0_16px_40px_rgba(0,0,0,0.14)]"
           >
             {normalized.map((option) => {
               const isSelected = option.value === value;
@@ -130,8 +130,8 @@ export function SelectDropdown({
                   }}
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[14px] font-semibold transition-colors ${
                     isSelected
-                      ? "bg-[#F2F8FF] text-[#3182F6]"
-                      : "text-[#191F28] hover:bg-[#F2F4F6]"
+                      ? "bg-selected text-accent"
+                      : "text-ink hover:bg-surface-muted"
                   }`}
                 >
                   <span className="truncate">{option.label}</span>
@@ -142,7 +142,7 @@ export function SelectDropdown({
                       viewBox="0 0 24 24"
                       fill="none"
                       aria-hidden="true"
-                      className="shrink-0 text-[#3182F6]"
+                      className="shrink-0 text-accent"
                     >
                       <path
                         d="M5 12.5l5 5L19 7"
@@ -164,7 +164,7 @@ export function SelectDropdown({
   return (
     <div ref={rootRef} className={`relative ${className}`}>
       {label ? (
-        <label className="mb-1.5 block text-[13px] font-semibold text-[#64748B]">
+        <label className="mb-1.5 block text-[13px] font-semibold text-ink-subtle">
           {label}
         </label>
       ) : null}
@@ -175,22 +175,22 @@ export function SelectDropdown({
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         onClick={() => setOpen((current) => !current)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[14px] outline-none transition hover:bg-white focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/15 ${
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border bg-surface px-3.5 py-2.5 text-left text-[14px] outline-none transition hover:bg-surface focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15 ${
           open
-            ? "border-[#3182F6] bg-white ring-2 ring-[#3182F6]/15"
-            : "border-gray-300"
+            ? "border-accent bg-surface ring-2 ring-accent/15"
+            : "border-edge"
         } ${buttonClassName}`}
       >
         <span
           className={`truncate ${
-            selected ? "font-medium text-[#1E293B]" : "text-[#64748B]"
+            selected ? "font-medium text-ink" : "text-ink-subtle"
           }`}
         >
           {selected?.label ?? placeholder}
         </span>
         <span
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-            open ? "bg-[#E8F3FF] text-[#3182F6]" : "bg-[#F2F4F6] text-[#4E5968]"
+            open ? "bg-selected-hover text-accent" : "bg-surface-muted text-ink-secondary"
           }`}
         >
           <svg

@@ -1,9 +1,9 @@
-import { isLocalRegion } from "@/lib/attachment-rates";
 import {
   isInvalidWorkTimeRange,
   requiresMorningClaimSelection,
   timeToMinutes,
 } from "@/lib/daily-hours";
+import { isLocalRegion } from "@/lib/regions";
 import type { LodgingCostItem, ReportForm, TransportCostItem } from "@/lib/types";
 
 function formatShortDate(date: string): string {
