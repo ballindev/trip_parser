@@ -1,4 +1,5 @@
 import { jsonError, jsonOk, readJson } from "@/lib/api/http";
+import { updateSortOrdersSequentially } from "@/lib/api/sort-order";
 import {
   mapTeams,
   type DbTeam,
@@ -106,14 +107,12 @@ export async function PATCH(request: Request) {
       return jsonError("팀 목록이 현재 데이터와 일치하지 않습니다.");
     }
 
-    const updates = await Promise.all(
-      orderedIds.map((teamId, index) =>
-        supabase.from("teams").update({ sort_order: index }).eq("id", teamId),
-      ),
+    const { error: reorderError } = await updateSortOrdersSequentially(
+      supabase,
+      "teams",
+      orderedIds,
     );
-
-    const failed = updates.find((result) => result.error);
-    if (failed?.error) return jsonError(failed.error.message, 500);
+    if (reorderError) return jsonError(reorderError.message, 500);
 
     return jsonOk({ ok: true, orderedIds });
   } catch (error) {

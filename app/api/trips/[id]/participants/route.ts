@@ -1,4 +1,5 @@
 import { jsonError, jsonOk, readJson } from "@/lib/api/http";
+import { updateSortOrdersSequentially } from "@/lib/api/sort-order";
 import { emptyForm } from "@/lib/mappers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { buildDailyHours } from "@/lib/daily-hours";
@@ -152,18 +153,13 @@ export async function PATCH(request: Request, { params }: Params) {
       return jsonError("참여자 목록이 현재 출장과 일치하지 않습니다.");
     }
 
-    const updates = await Promise.all(
-      orderedIds.map((participantId, index) =>
-        supabase
-          .from("trip_participants")
-          .update({ sort_order: index })
-          .eq("id", participantId)
-          .eq("trip_id", tripId),
-      ),
+    const { error: reorderError } = await updateSortOrdersSequentially(
+      supabase,
+      "trip_participants",
+      orderedIds,
+      { eq: { trip_id: tripId } },
     );
-
-    const failed = updates.find((result) => result.error);
-    if (failed?.error) return jsonError(failed.error.message, 500);
+    if (reorderError) return jsonError(reorderError.message, 500);
 
     return jsonOk({ ok: true, orderedIds });
   } catch (error) {

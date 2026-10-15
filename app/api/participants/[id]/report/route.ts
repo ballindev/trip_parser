@@ -42,13 +42,19 @@ export async function PUT(request: Request, { params }: Params) {
       if (statusError) return jsonError(statusError.message, 500);
     }
 
-    // Replace child rows
-    await Promise.all([
-      supabase.from("daily_work_hours").delete().eq("participant_id", participantId),
-      supabase.from("daily_meals").delete().eq("participant_id", participantId),
-      supabase.from("transport_items").delete().eq("participant_id", participantId),
-      supabase.from("lodging_items").delete().eq("participant_id", participantId),
-    ]);
+    // 자식 행 교체 — 병렬 DELETE는 FK/인덱스 락 교차로 deadlock 날 수 있어 순차 처리
+    for (const table of [
+      "daily_work_hours",
+      "daily_meals",
+      "transport_items",
+      "lodging_items",
+    ] as const) {
+      const { error: deleteError } = await supabase
+        .from(table)
+        .delete()
+        .eq("participant_id", participantId);
+      if (deleteError) return jsonError(deleteError.message, 500);
+    }
 
     if (form.dailyHours.length > 0) {
       const { error } = await supabase.from("daily_work_hours").insert(
