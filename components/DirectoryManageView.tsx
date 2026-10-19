@@ -47,6 +47,7 @@ type DirectoryManageViewProps = {
   onReorderTeamMembers: (teamId: string, orderedMemberIds: string[]) => void;
   onReorderPeople: (orderedIds: string[]) => void;
   onDeleteTeam: (teamId: string) => void;
+  onOpenTrip?: (tripId: string, participantId: string) => void;
 };
 
 export function DirectoryManageView({
@@ -64,6 +65,7 @@ export function DirectoryManageView({
   onReorderTeamMembers,
   onReorderPeople,
   onDeleteTeam,
+  onOpenTrip,
 }: DirectoryManageViewProps) {
   const [selectedTeamId, setSelectedTeamId] = useState<string | "all">("all");
   const [selectedPersonId, setSelectedPersonId] = useState("");
@@ -442,7 +444,7 @@ export function DirectoryManageView({
       >
         <div
           className={`flex w-full flex-col ${
-            embedded ? "min-h-0 flex-1" : "mx-auto max-w-[1280px]"
+            embedded ? "min-h-0 flex-1" : "mx-auto max-w-[1360px]"
           }`}
         >
           {embedded ? null : (
@@ -456,8 +458,8 @@ export function DirectoryManageView({
           <div
             className={`grid ${
               embedded
-                ? "h-full min-h-0 w-full grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)_minmax(0,1fr)] gap-3"
-                : "mx-auto mt-8 h-[min(680px,calc(100vh-200px))] w-fit grid-cols-[300px_360px_320px] gap-4"
+                ? "h-full min-h-0 w-full grid-cols-[minmax(0,0.9fr)_minmax(0,1.05fr)_minmax(520px,1.7fr)] gap-3"
+                : "mx-auto mt-8 h-[min(680px,calc(100vh-200px))] w-fit grid-cols-[300px_360px_640px] gap-4"
             }`}
           >
             <TeamPanel
@@ -511,6 +513,7 @@ export function DirectoryManageView({
               }
               trips={trips}
               people={people}
+              onOpenTrip={onOpenTrip}
             />
           </div>
         </div>

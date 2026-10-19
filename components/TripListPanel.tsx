@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TripFormDialog,
   type TripFormValues,
@@ -31,6 +31,7 @@ type TripListPanelProps = {
   onUpdateTrip: (tripId: string, values: TripFormValues) => void;
   onDeleteTrip: (tripId: string) => void;
   onOpenAttachment: () => void;
+  arrivalToken?: number;
 };
 
 type FormDialogState =
@@ -46,6 +47,7 @@ export function TripListPanel({
   onUpdateTrip,
   onDeleteTrip,
   onOpenAttachment,
+  arrivalToken,
 }: TripListPanelProps) {
   const [deleteTarget, setDeleteTarget] = useState<Trip | null>(null);
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
@@ -67,6 +69,14 @@ export function TripListPanel({
       );
     });
   }, [trips, searchQuery]);
+
+  useEffect(() => {
+    if (!arrivalToken || !selectedTripId) return;
+    document.getElementById(`trip-card-${selectedTripId}`)?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [arrivalToken, selectedTripId]);
 
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
@@ -186,11 +196,19 @@ export function TripListPanel({
             return (
               <div
                 key={trip.id}
+                id={`trip-card-${trip.id}`}
                 className={listCardClassName({
                   selected,
                   withTransition: true,
                 })}
               >
+                {selected && arrivalToken ? (
+                  <span
+                    key={arrivalToken}
+                    aria-hidden="true"
+                    className="arrival-flash pointer-events-none absolute inset-0 z-0"
+                  />
+                ) : null}
                 {selected ? (
                   <span
                     aria-hidden="true"
@@ -201,7 +219,7 @@ export function TripListPanel({
                   type="button"
                   onClick={() => onSelectTrip(trip.id)}
                   onDoubleClick={() => handleOpenEdit(trip)}
-                  className="w-full p-4 text-left"
+                  className="relative z-10 w-full p-4 text-left"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-ink">
@@ -229,7 +247,7 @@ export function TripListPanel({
                     </span>
                   </div>
                 </button>
-                <div className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                <div className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
                   <RowEditButton
                     label="출장 수정"
                     onClick={() => handleOpenEdit(trip)}

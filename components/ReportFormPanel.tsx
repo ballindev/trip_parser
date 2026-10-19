@@ -6,29 +6,17 @@ import {
   isResignedPerson,
 } from "@/components/PersonNameLabel";
 import { StatusBadge } from "@/components/StatusBadge";
-import {
-  formatTotalWorkHours,
-  rebuildDailyHours,
-} from "@/lib/daily-hours";
-import {
-  eligibleMeals,
-  formatMealSummary,
-  rebuildDailyMeals,
-} from "@/lib/daily-meals";
-import { formatCurrency, formatDateRange } from "@/lib/format";
+import { rebuildDailyHours } from "@/lib/daily-hours";
+import { eligibleMeals, rebuildDailyMeals } from "@/lib/daily-meals";
+import { formatDateRange } from "@/lib/format";
 import { isLocalRegion, normalizeRegion } from "@/lib/regions";
-import {
-  calcPersonAllowances,
-  collectRentHalfPersonIds,
-  isRentHalfParticipant,
-} from "@/lib/attachment-text";
 import {
   clearLocalUnsupportedCosts,
   cloneReportFormFrom,
   isCopyableSource,
 } from "@/lib/report-form-copy";
 import { getMissingRequiredLabels } from "@/lib/report-validation";
-import { sumCostLines, withTransportPeople } from "@/lib/transport-cost";
+import { withTransportPeople } from "@/lib/transport-cost";
 import type {
   LodgingCostItem,
   Participant,
@@ -38,12 +26,7 @@ import type {
 } from "@/lib/types";
 import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 import { useSmoothStickySummary } from "@/lib/use-smooth-sticky-summary";
-import {
-  uiCard,
-  uiPanel,
-  uiPanelHeader,
-  uiRowClassName,
-} from "@/lib/ui-tokens";
+import { uiPanel, uiPanelHeader, uiRowClassName } from "@/lib/ui-tokens";
 import {
   CostSections,
   MEAL_OPTIONS,
@@ -53,8 +36,8 @@ import {
   resolveAuthorPersonId,
 } from "./report-form/CostSections";
 import { DailyHoursSection } from "./report-form/DailyHoursSection";
-import { SummaryRow } from "./report-form/FormSection";
 import { RegionSection } from "./report-form/RegionSection";
+import { ReportInputSummary } from "./report-form/ReportInputSummary";
 import { ScheduleSection } from "./report-form/ScheduleSection";
 
 type ReportFormPanelProps = {
@@ -262,15 +245,6 @@ export function ReportFormPanel({
     },
   });
 
-  const rentHalfPersonIds = useMemo(() => {
-    if (!participant || !form) return new Set<string>();
-    const liveParticipant = { ...participant, form };
-    const others = tripParticipants.filter(
-      (row) => row.id !== participant.id,
-    );
-    return collectRentHalfPersonIds([...others, liveParticipant]);
-  }, [participant, form, tripParticipants]);
-
   const formScrollRef = useRef<HTMLDivElement>(null);
   const summaryAsideRef = useRef<HTMLElement>(null);
 
@@ -306,21 +280,6 @@ export function ReportFormPanel({
   const localUnsupported = isLocalRegion(form.region ?? "");
   const transportItems = localUnsupported ? [] : (form.transportItems ?? []);
   const lodgingItems = localUnsupported ? [] : (form.lodgingItems ?? []);
-  const totalWorkHoursLabel = formatTotalWorkHours(form.dailyHours);
-  const transportTotal = sumCostLines(transportItems);
-  const lodgingTotal = sumCostLines(lodgingItems);
-  const { dailyAllowance, mealPay } = calcPersonAllowances(
-    { ...participant, form },
-    { rentHalfPersonIds, people: directoryPeople },
-  );
-  const rentHalfApplied = isRentHalfParticipant(
-    { ...participant, form },
-    rentHalfPersonIds,
-    directoryPeople,
-  );
-  const totalCost =
-    dailyAllowance + mealPay + transportTotal + lodgingTotal;
-  const localUnsupportedLabel = "관내 미지원";
   const missingRequiredLabels = getMissingRequiredLabels(form);
   const canSubmit = missingRequiredLabels.length === 0;
 
@@ -481,103 +440,12 @@ export function ReportFormPanel({
               tripName ? "mt-[60px]" : ""
             }`}
           >
-            <div className={`${uiCard} p-5`}>
-              <p className="text-[13px] font-semibold text-ink-subtle">
-                입력 요약
-              </p>
-              <h3 className="mt-1 text-[16px] font-bold text-ink">
-                <PersonNameLabel
-                  name={participant.name}
-                  resigned={
-                    !!participant.personId &&
-                    isResignedPerson(
-                      directoryPeople.find((p) => p.id === participant.personId),
-                    )
-                  }
-                />
-              </h3>
-
-              <div className="mt-4 divide-y divide-edge">
-                <SummaryRow
-                  label="작성 상태"
-                  value={participant.status}
-                />
-                <SummaryRow
-                  label="지역"
-                  value={form.region || "미입력"}
-                />
-                <SummaryRow
-                  label="일정"
-                  value={
-                    form.startDate && form.endDate
-                      ? formatDateRange(form.startDate, form.endDate)
-                      : "미입력"
-                  }
-                />
-                <SummaryRow
-                  label="총 근무시간"
-                  value={totalWorkHoursLabel}
-                />
-                <SummaryRow
-                  label="일비"
-                  value={`${formatCurrency(dailyAllowance)}원${
-                    rentHalfApplied ? " (렌트 내역 적용)" : ""
-                  }`}
-                />
-                <SummaryRow
-                  label="식비"
-                  value={
-                    localUnsupported
-                      ? localUnsupportedLabel
-                      : `${formatCurrency(mealPay)}원`
-                  }
-                />
-                <SummaryRow
-                  label="사업추진비"
-                  value={
-                    localUnsupported
-                      ? localUnsupportedLabel
-                      : formatMealSummary(form.dailyMeals)
-                  }
-                />
-                <SummaryRow
-                  label="교통비"
-                  value={
-                    localUnsupported
-                      ? localUnsupportedLabel
-                      : `${formatCurrency(transportTotal)}원`
-                  }
-                />
-                <SummaryRow
-                  label="숙박비"
-                  value={
-                    localUnsupported
-                      ? localUnsupportedLabel
-                      : `${formatCurrency(lodgingTotal)}원`
-                  }
-                />
-              </div>
-
-              {!canSubmit && missingRequiredLabels.length > 0 ? (
-                <div className="mt-4 rounded-xl bg-warning-soft px-3.5 py-3">
-                  <p className="text-[12px] font-semibold text-warning-ink-emphasis">
-                    제출 전 미입력
-                  </p>
-                  <p className="mt-1 text-[12px] font-medium leading-5 text-warning-ink-strong">
-                    {missingRequiredLabels.join(" · ")}
-                  </p>
-                </div>
-              ) : null}
-
-              <div className="mt-4 rounded-xl bg-selected px-3.5 py-3">
-                <p className="text-[12px] font-semibold text-accent">
-                  비용 합계
-                </p>
-                <p className="mt-1 text-right text-[20px] font-bold tracking-tight tabular-nums text-ink">
-                  {formatCurrency(totalCost)}원
-                </p>
-              </div>
-            </div>
+            <ReportInputSummary
+              participant={participant}
+              form={form}
+              directoryPeople={directoryPeople}
+              tripParticipants={tripParticipants}
+            />
           </aside>
         </div>
       </div>

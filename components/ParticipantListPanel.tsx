@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -37,6 +37,7 @@ type ParticipantListPanelProps = {
   onAddParticipant: () => void;
   onDeleteParticipant: (participantId: string) => void;
   onReorderParticipants: (orderedIds: string[]) => void;
+  arrivalToken?: number;
 };
 
 function ParticipantCardContent({
@@ -58,7 +59,7 @@ function ParticipantCardContent({
           className="absolute top-2.5 bottom-2.5 left-0 w-1 rounded-r-full bg-accent"
         />
       ) : null}
-      <div className="flex items-start justify-between gap-2 px-3 py-3">
+      <div className="flex items-center justify-between gap-2 px-3 py-3">
         <div className="min-w-0 flex-1">
           <PersonNameLabel
             name={participant.name}
@@ -87,12 +88,14 @@ function SortableParticipantCard({
   participant,
   resigned,
   selected,
+  highlightToken,
   onSelect,
   onDelete,
 }: {
   participant: Participant;
   resigned: boolean;
   selected: boolean;
+  highlightToken?: number;
   onSelect: () => void;
   onDelete: () => void;
 }) {
@@ -113,12 +116,20 @@ function SortableParticipantCard({
   return (
     <div
       ref={setNodeRef}
+      id={`participant-card-${participant.id}`}
       style={style}
       className={listCardClassName({ selected, isDragging })}
     >
+      {highlightToken ? (
+        <span
+          key={highlightToken}
+          aria-hidden="true"
+          className="arrival-flash pointer-events-none absolute inset-0 z-0"
+        />
+      ) : null}
       <button
         type="button"
-        className="w-full cursor-grab touch-none text-left active:cursor-grabbing"
+        className="relative z-10 w-full cursor-grab touch-none text-left active:cursor-grabbing"
         onClick={onSelect}
         {...attributes}
         {...listeners}
@@ -131,7 +142,7 @@ function SortableParticipantCard({
         />
       </button>
       {!isDragging ? (
-        <div className="pointer-events-none absolute top-3 right-3 flex items-center opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+        <div className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 items-center opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
           <RowDeleteButton label="참여자 삭제" onClick={onDelete} />
         </div>
       ) : null}
@@ -147,6 +158,7 @@ export function ParticipantListPanel({
   onAddParticipant,
   onDeleteParticipant,
   onReorderParticipants,
+  arrivalToken,
 }: ParticipantListPanelProps) {
   const [deleteTarget, setDeleteTarget] = useState<Participant | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -167,6 +179,16 @@ export function ParticipantListPanel({
         .length,
     [participants],
   );
+
+  useEffect(() => {
+    if (!arrivalToken || !selectedParticipantId) return;
+    document
+      .getElementById(`participant-card-${selectedParticipantId}`)
+      ?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+  }, [arrivalToken, selectedParticipantId]);
 
   const isParticipantResigned = (participant: Participant) => {
     if (!participant.personId) return false;
@@ -281,6 +303,11 @@ export function ParticipantListPanel({
                     participant={participant}
                     resigned={isParticipantResigned(participant)}
                     selected={participant.id === selectedParticipantId}
+                    highlightToken={
+                      participant.id === selectedParticipantId
+                        ? arrivalToken
+                        : undefined
+                    }
                     onSelect={() => onSelectParticipant(participant.id)}
                     onDelete={() => setDeleteTarget(participant)}
                   />

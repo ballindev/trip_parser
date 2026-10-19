@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AttachmentPreviewDialog } from "@/components/AttachmentPreviewDialog";
 import { DirectoryManageView } from "@/components/DirectoryManageView";
 import { ParticipantListPanel } from "@/components/ParticipantListPanel";
@@ -22,7 +22,15 @@ export function TripReportDashboard() {
   const [selectedParticipantId, setSelectedParticipantId] = useState("");
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
-  const [directoryOpen, setDirectoryOpen] = useState(false);
+  const [directoryMounted, setDirectoryMounted] = useState(false);
+  const [directoryShown, setDirectoryShown] = useState(false);
+  const [arrival, setArrival] = useState<{
+    token: number;
+    message: string;
+  } | null>(null);
+  const directoryFrame = useRef<number | null>(null);
+  const directoryTimer = useRef<number | null>(null);
+  const arrivalTimer = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -67,6 +75,49 @@ export function TripReportDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (directoryFrame.current) cancelAnimationFrame(directoryFrame.current);
+      if (directoryTimer.current) window.clearTimeout(directoryTimer.current);
+      if (arrivalTimer.current) window.clearTimeout(arrivalTimer.current);
+    };
+  }, []);
+
+  const openDirectory = () => {
+    if (directoryTimer.current) {
+      window.clearTimeout(directoryTimer.current);
+      directoryTimer.current = null;
+    }
+    setDirectoryMounted(true);
+    directoryFrame.current = requestAnimationFrame(() => {
+      directoryFrame.current = requestAnimationFrame(() => {
+        setDirectoryShown(true);
+      });
+    });
+  };
+
+  const closeDirectory = () => {
+    if (directoryFrame.current) {
+      cancelAnimationFrame(directoryFrame.current);
+      directoryFrame.current = null;
+    }
+    setDirectoryShown(false);
+    if (directoryTimer.current) window.clearTimeout(directoryTimer.current);
+    directoryTimer.current = window.setTimeout(() => {
+      setDirectoryMounted(false);
+      directoryTimer.current = null;
+    }, 200);
+  };
+
+  const showArrival = (message: string) => {
+    if (arrivalTimer.current) window.clearTimeout(arrivalTimer.current);
+    setArrival({ token: Date.now(), message });
+    arrivalTimer.current = window.setTimeout(() => {
+      setArrival(null);
+      arrivalTimer.current = null;
+    }, 1800);
+  };
+
   const selectedTrip = useMemo(
     () => trips.find((trip) => trip.id === selectedTripId) ?? null,
     [trips, selectedTripId],
@@ -103,6 +154,27 @@ export function TripReportDashboard() {
 
     setSelectedTripId(tripId);
     setSelectedParticipantId(trip.participants[0]?.id ?? "");
+  };
+
+  const handleOpenTripFromDirectory = (
+    tripId: string,
+    participantId: string,
+  ) => {
+    const trip = trips.find((item) => item.id === tripId);
+    if (!trip) return;
+    const participant = trip.participants.find(
+      (item) => item.id === participantId,
+    );
+    const nextParticipant =
+      participant ?? trip.participants[0] ?? null;
+    setSelectedTripId(tripId);
+    setSelectedParticipantId(nextParticipant?.id ?? "");
+    closeDirectory();
+    showArrival(
+      nextParticipant
+        ? `${trip.name} · ${nextParticipant.name} 화면으로 이동했습니다`
+        : `${trip.name} 화면으로 이동했습니다`,
+    );
   };
 
   const handleSelectParticipant = (participantId: string) => {
@@ -381,7 +453,7 @@ export function TripReportDashboard() {
 
         <button
           type="button"
-          onClick={() => setDirectoryOpen(true)}
+          onClick={openDirectory}
           className="shrink-0 rounded-xl bg-surface-muted px-3.5 py-2 text-[13px] font-bold text-ink-subtle transition-colors hover:bg-edge hover:text-ink"
         >
           팀/인원 관리
@@ -394,6 +466,17 @@ export function TripReportDashboard() {
         </div>
       ) : null}
 
+      {arrival ? (
+        <p
+          key={arrival.token}
+          role="status"
+          aria-live="polite"
+          className="arrival-banner pointer-events-none fixed top-[79px] left-1/2 z-[60] flex h-9 w-max items-center justify-center rounded-full border border-edge-selected bg-selected px-4 text-[13px] font-bold leading-none text-accent shadow-[0_8px_24px_rgba(25,31,40,0.12)]"
+        >
+          {arrival.message}
+        </p>
+      ) : null}
+
       <main className="flex min-h-0 flex-1 gap-3 p-3">
         <TripListPanel
           trips={trips}
@@ -403,12 +486,14 @@ export function TripReportDashboard() {
           onUpdateTrip={handleUpdateTrip}
           onDeleteTrip={handleDeleteTrip}
           onOpenAttachment={() => setIsAttachmentOpen(true)}
+          arrivalToken={arrival?.token}
         />
         {selectedTrip ? (
           <ParticipantListPanel
             participants={selectedTrip.participants}
             people={people}
             selectedParticipantId={selectedParticipantId}
+            arrivalToken={arrival?.token}
             onSelectParticipant={handleSelectParticipant}
             onAddParticipant={handleOpenParticipantPicker}
             onDeleteParticipant={handleDeleteParticipant}
@@ -452,13 +537,19 @@ export function TripReportDashboard() {
         />
       </main>
 
-      {directoryOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      {directoryMounted ? (
+        <div
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 transition-opacity duration-200 ${
+            directoryShown ? "opacity-100" : "opacity-0"
+          }`}
+        >
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="directory-modal-title"
-            className="flex h-[min(760px,92vh)] w-full max-w-[1200px] flex-col overflow-hidden rounded-2xl bg-surface-subtle shadow-[0_16px_40px_rgba(0,0,0,0.16)]"
+            className={`flex h-[min(760px,92vh)] w-full max-w-[1480px] flex-col overflow-hidden rounded-2xl bg-surface-subtle shadow-[0_16px_40px_rgba(0,0,0,0.16)] transition-all duration-200 ${
+              directoryShown ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+            }`}
           >
             <header
               className={`flex h-14 shrink-0 items-center justify-between gap-3 ${uiPanelHeader} bg-surface px-5`}
@@ -476,7 +567,7 @@ export function TripReportDashboard() {
               </div>
               <button
                 type="button"
-                onClick={() => setDirectoryOpen(false)}
+                onClick={closeDirectory}
                 className="shrink-0 rounded-xl bg-surface-muted px-3 py-1.5 text-[13px] font-bold text-ink-subtle transition-colors hover:bg-edge"
               >
                 닫기
@@ -487,8 +578,9 @@ export function TripReportDashboard() {
               people={people}
               teams={teams}
               trips={trips}
-              onRequestClose={() => setDirectoryOpen(false)}
+              onRequestClose={closeDirectory}
               {...directoryActions}
+              onOpenTrip={handleOpenTripFromDirectory}
             />
           </div>
         </div>

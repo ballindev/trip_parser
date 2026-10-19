@@ -139,3 +139,35 @@ body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+@keyframes arrival-flash {
+  0% {
+    background-color: var(--selected-hover);
+  }
+  65% {
+    background-color: var(--selected);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.arrival-flash {
+  animation: arrival-flash 1.6s ease-out;
+}
+
+@keyframes arrival-banner {
+  0%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+
+.arrival-banner {
+  animation: arrival-banner 1.8s ease-out both;
+}
