@@ -51,6 +51,7 @@ export function tripMatchesPeriod(
     return start <= `${year}-12-31` && end >= `${year}-01-01`;
   }
 
+  if (month === "all") return true;
   return rangeIncludesMonth(start, end, month);
 }
 
