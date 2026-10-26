@@ -6,5 +6,6 @@
 -- 5) migrations/20261011040000_transport_item_people.sql (필요 시)
 -- 6) migrations/20261011050000_drop_lodging_item_people.sql (필요 시)
 -- 7) seed.sql  (데이터 초기화, 시드 행 없음)
+-- 8) migrations/20261026010000_change_requests.sql (수정 요청)
 --
 -- 또는 한 번에: run_in_dashboard.sql 전체를 붙여넣고 Run

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AttachmentPreviewDialog } from "@/components/AttachmentPreviewDialog";
 import { DirectoryManageView } from "@/components/DirectoryManageView";
+import { NoticeDialog } from "@/components/NoticeDialog";
 import { ParticipantListPanel } from "@/components/ParticipantListPanel";
 import { ParticipantPickerDialog } from "@/components/ParticipantPickerDialog";
 import { ReportFormPanel } from "@/components/ReportFormPanel";
 import type { TripFormValues } from "@/components/TripFormDialog";
 import { TripListPanel } from "@/components/TripListPanel";
 import { api } from "@/lib/api/client";
+import { latestChangelogDate } from "@/lib/changelog";
+import { hasUnseenChangelog } from "@/lib/changelog-seen";
 import { isReportReadyToSubmit } from "@/lib/report-validation";
 import type { Person, ReportForm, Team, Trip, WriteStatus } from "@/lib/types";
 import { useTripDirectoryActions } from "@/lib/use-trip-directory-actions";
@@ -24,6 +27,8 @@ export function TripReportDashboard() {
   const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
   const [directoryMounted, setDirectoryMounted] = useState(false);
   const [directoryShown, setDirectoryShown] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [unseenChangelog, setUnseenChangelog] = useState(false);
   const [arrival, setArrival] = useState<{
     token: number;
     message: string;
@@ -73,6 +78,26 @@ export function TripReportDashboard() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getChangelog()
+      .then((items) => {
+        if (!cancelled) {
+          setUnseenChangelog(hasUnseenChangelog(latestChangelogDate(items)));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const closeNotice = useCallback(() => setNoticeOpen(false), []);
+  const handleChangelogSeen = useCallback(() => {
+    setUnseenChangelog(false);
   }, []);
 
   useEffect(() => {
@@ -451,13 +476,31 @@ export function TripReportDashboard() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={openDirectory}
-          className="shrink-0 rounded-xl bg-surface-muted px-3.5 py-2 text-[13px] font-bold text-ink-subtle transition-colors hover:bg-edge hover:text-ink"
-        >
-          팀/인원 관리
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setNoticeOpen(true)}
+            aria-label={
+              unseenChangelog ? "작업 내용&요청, 새 적용 내용" : "작업 내용&요청"
+            }
+            className="relative shrink-0 rounded-xl bg-surface-muted px-3.5 py-2 text-[13px] font-bold text-ink-subtle transition-colors hover:bg-edge hover:text-ink"
+          >
+            작업 내용&요청
+            {unseenChangelog ? (
+              <span
+                aria-hidden="true"
+                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-surface"
+              />
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={openDirectory}
+            className="shrink-0 rounded-xl bg-surface-muted px-3.5 py-2 text-[13px] font-bold text-ink-subtle transition-colors hover:bg-edge hover:text-ink"
+          >
+            팀/인원 관리
+          </button>
+        </div>
       </header>
 
       {error ? (
@@ -595,6 +638,42 @@ export function TripReportDashboard() {
           onCancel={() => setIsPickerOpen(false)}
         />
       ) : null}
+
+      <NoticeDialog
+        open={noticeOpen}
+        people={people}
+        onClose={closeNotice}
+        onChangelogSeen={handleChangelogSeen}
+      />
+
+      <a
+        href="/dev/requests"
+        aria-label="개발자 전용 페이지"
+        className="group fixed right-5 bottom-5 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-edge bg-surface text-ink-subtle shadow-[0_4px_16px_rgba(25,31,40,0.12)] transition-colors hover:bg-edge hover:text-ink"
+      >
+        <span className="pointer-events-none absolute right-0 bottom-full mb-2.5 rounded-lg bg-ink px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap text-white opacity-0 shadow-[0_8px_20px_rgba(25,31,40,0.16)] transition-opacity group-hover:opacity-100">
+          개발자 전용 페이지
+          <span
+            aria-hidden="true"
+            className="absolute top-full right-3 border-[5px] border-transparent border-t-ink"
+          />
+        </span>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M8 8 4 12l4 4M16 8l4 4-4 4M13 6l-2 12"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </a>
 
       {isAttachmentOpen && selectedTrip ? (
         <AttachmentPreviewDialog

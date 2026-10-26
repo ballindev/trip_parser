@@ -11,9 +11,36 @@ import {
 } from "@/components/RowActionIcons";
 import { formatDateRange, participationBadge } from "@/lib/format";
 import { listCardClassName } from "@/lib/list-card-styles";
+import {
+  defaultTripFilterMonth,
+  defaultTripFilterYear,
+  tripFilterYears,
+  tripMatchesPeriod,
+  type TripPeriodValue,
+} from "@/lib/trip-period-filter";
 import type { Trip } from "@/lib/types";
 import { useDialogKeyboard } from "@/lib/use-dialog-keyboard";
 import { uiPanel, uiPanelHeader } from "@/lib/ui-tokens";
+
+function SearchIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M16 16.5L20 20.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 function todayIsoDate() {
   const now = new Date();
@@ -52,15 +79,35 @@ export function TripListPanel({
   const [deleteTarget, setDeleteTarget] = useState<Trip | null>(null);
   const [formDialog, setFormDialog] = useState<FormDialogState>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [yearFilter, setYearFilter] = useState<TripPeriodValue>(() =>
+    defaultTripFilterYear(),
+  );
+  const [monthFilter, setMonthFilter] = useState<TripPeriodValue>(() =>
+    defaultTripFilterMonth(),
+  );
+  const years = tripFilterYears();
 
   const selectedTrip =
     trips.find((trip) => trip.id === selectedTripId) ?? null;
 
+  const periodTrips = useMemo(
+    () =>
+      trips.filter((trip) =>
+        tripMatchesPeriod(
+          trip.startDate,
+          trip.endDate,
+          yearFilter,
+          monthFilter,
+        ),
+      ),
+    [trips, yearFilter, monthFilter],
+  );
+
   const filteredTrips = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return trips;
+    if (!query) return periodTrips;
 
-    return trips.filter((trip) => {
+    return periodTrips.filter((trip) => {
       const dateLabel = formatDateRange(trip.startDate, trip.endDate).toLowerCase();
       return (
         trip.name.toLowerCase().includes(query) ||
@@ -68,7 +115,7 @@ export function TripListPanel({
         dateLabel.includes(query)
       );
     });
-  }, [trips, searchQuery]);
+  }, [periodTrips, searchQuery]);
 
   useEffect(() => {
     if (!arrivalToken || !selectedTripId) return;
@@ -125,45 +172,84 @@ export function TripListPanel({
 
   return (
     <aside
-      className={`relative flex h-full w-[20%] min-w-[240px] flex-col overflow-hidden ${uiPanel}`}
+      className={`relative flex h-full w-[20%] min-w-[280px] flex-col overflow-hidden ${uiPanel}`}
     >
       <header
-        className={`flex h-[56px] shrink-0 items-center justify-between gap-3 ${uiPanelHeader} px-4`}
+        className={`flex h-[56px] shrink-0 items-center justify-between gap-2 ${uiPanelHeader} px-4`}
       >
         <h2 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-ink">
           출장 목록{" "}
-          <span className="font-medium text-ink-subtle">({trips.length})</span>
+          <span className="font-medium text-ink-subtle">
+            ({filteredTrips.length})
+          </span>
         </h2>
         <button
           type="button"
           onClick={handleOpenCreate}
           aria-label="출장 추가"
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent text-lg font-bold leading-none text-white transition-colors hover:bg-accent-hover"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent text-lg font-bold leading-none text-white transition-colors hover:bg-accent-hover"
         >
           +
         </button>
       </header>
 
       <div className="h-[60px] shrink-0 px-4 py-3">
-        <div className="relative h-full">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="출장명, 적요, 일정 검색"
-            aria-label="출장 검색"
-            className="h-full w-full rounded-xl border border-edge bg-surface px-3 pr-9 text-[13px] text-ink outline-none transition placeholder:text-ink-subtle focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
-          />
-          {searchQuery ? (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              aria-label="검색어 지우기"
-              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink-subtle"
-            >
-              ×
-            </button>
-          ) : null}
+        <div className="flex h-full gap-2">
+          <select
+            aria-label="연도"
+            value={yearFilter === "all" ? "all" : String(yearFilter)}
+            onChange={(event) => {
+              const next = event.target.value;
+              setYearFilter(next === "all" ? "all" : Number(next));
+            }}
+            className="h-full w-auto shrink-0 rounded-xl border border-edge bg-surface px-2 text-[13px] font-semibold text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+          >
+            <option value="all">전체</option>
+            {years.map((year) => (
+              <option key={year} value={year}>
+                {year}년
+              </option>
+            ))}
+          </select>
+          <select
+            aria-label="월"
+            value={monthFilter === "all" ? "all" : String(monthFilter)}
+            onChange={(event) => {
+              const next = event.target.value;
+              setMonthFilter(next === "all" ? "all" : Number(next));
+            }}
+            className="h-full w-auto shrink-0 rounded-xl border border-edge bg-surface px-2 text-[13px] font-semibold text-ink outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+          >
+            <option value="all">전체</option>
+            {Array.from({ length: 12 }, (_, index) => index + 1).map((month) => (
+              <option key={month} value={month}>
+                {month}월
+              </option>
+            ))}
+          </select>
+          <div className="relative h-full min-w-0 flex-1">
+            <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-ink-subtle">
+              <SearchIcon />
+            </span>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="검색"
+              aria-label="출장 검색"
+              className="h-full w-full rounded-xl border border-edge bg-surface pr-7 pl-8 text-[13px] text-ink outline-none transition placeholder:text-ink-subtle focus:border-accent focus:ring-2 focus:ring-accent/15 [&::-webkit-search-cancel-button]:hidden"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="검색어 지우기"
+                className="absolute top-1/2 right-1 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-lg text-[12px] font-bold text-ink-subtle transition-colors hover:bg-surface-muted hover:text-ink"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -175,6 +261,15 @@ export function TripListPanel({
             </p>
             <p className="mt-1 text-[12px] text-ink-subtle">
               + 버튼으로 출장을 추가해 주세요
+            </p>
+          </div>
+        ) : periodTrips.length === 0 ? (
+          <div className="rounded-2xl border border-edge bg-surface px-4 py-8 text-center shadow-sm">
+            <p className="text-[13px] font-semibold text-ink-subtle">
+              선택한 기간의 출장이 없습니다
+            </p>
+            <p className="mt-1 text-[12px] text-ink-subtle">
+              연도나 월을 바꿔 보세요
             </p>
           </div>
         ) : filteredTrips.length === 0 ? (

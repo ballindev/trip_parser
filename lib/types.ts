@@ -94,3 +94,19 @@ export type Trip = {
   summary: string;
   participants: Participant[];
 };
+
+export type ChangeRequestCategory = "오류" | "개선";
+
+export type ChangeRequestStatus = "접수" | "진행 중" | "반영됨" | "보류";
+
+export type ChangeRequest = {
+  id: string;
+  personId: string | null;
+  authorName: string;
+  category: ChangeRequestCategory;
+  body: string;
+  status: ChangeRequestStatus;
+  /** `YYYY-MM-DD`. 반영됨일 때만 값이 있습니다. */
+  resolvedOn: string | null;
+  createdAt: string;
+};

@@ -222,3 +222,33 @@ create index if not exists people_sort_order_idx on people (sort_order);
 -- 숙박비 인원 연결 테이블 제거 (본인 1인 고정)
 drop policy if exists "dev_all_lodging_item_people" on lodging_item_people;
 drop table if exists lodging_item_people;
+
+-- 수정 요청
+create table if not exists change_requests (
+  id uuid primary key default gen_random_uuid(),
+  person_id uuid references people (id) on delete set null,
+  author_name text not null,
+  category text not null check (category in ('오류', '개선')),
+  body text not null check (char_length(trim(body)) between 1 and 1000),
+  status text not null default '접수'
+    check (status in ('접수', '진행 중', '반영됨', '보류')),
+  resolved_on date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists change_requests_created_at_idx
+  on change_requests (created_at desc);
+
+alter table change_requests enable row level security;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where tablename = 'change_requests'
+      and policyname = 'dev_all_change_requests'
+  ) then
+    create policy "dev_all_change_requests"
+      on change_requests for all using (true) with check (true);
+  end if;
+end $$;

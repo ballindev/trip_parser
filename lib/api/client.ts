@@ -1,4 +1,14 @@
-import type { Person, ReportForm, Team, Trip, WriteStatus } from "@/lib/types";
+import type { ChangelogItem } from "@/lib/changelog";
+import type {
+  ChangeRequest,
+  ChangeRequestCategory,
+  ChangeRequestStatus,
+  Person,
+  ReportForm,
+  Team,
+  Trip,
+  WriteStatus,
+} from "@/lib/types";
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -124,6 +134,43 @@ export const api = {
         body: JSON.stringify({ orderedIds }),
       },
     ),
+
+  getChangeRequests: () => request<ChangeRequest[]>("/api/change-requests"),
+  createChangeRequest: (body: {
+    personId: string;
+    category: ChangeRequestCategory;
+    body: string;
+  }) =>
+    request<ChangeRequest>("/api/change-requests", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateChangeRequest: (
+    id: string,
+    body: { status: ChangeRequestStatus; resolvedOn?: string | null },
+  ) =>
+    request<ChangeRequest>(`/api/change-requests/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteChangeRequest: (id: string) =>
+    request<{ ok: boolean }>(`/api/change-requests/${id}`, {
+      method: "DELETE",
+    }),
+
+  getChangelog: () => request<ChangelogItem[]>("/api/changelog"),
+  createChangelogItem: (body: { date: string; body: string }) =>
+    request<ChangelogItem>("/api/changelog", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateChangelogItem: (id: string, body: { date: string; body: string }) =>
+    request<ChangelogItem>(`/api/changelog/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  deleteChangelogItem: (id: string) =>
+    request<{ ok: boolean }>(`/api/changelog/${id}`, { method: "DELETE" }),
 
   saveReport: (
     participantId: string,
