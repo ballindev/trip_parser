@@ -68,6 +68,12 @@ export function DevLoginForm() {
         >
           {pending ? "확인 중…" : "들어가기"}
         </button>
+        <a
+          href="/"
+          className="mt-3 block text-center text-[13px] font-bold text-ink-subtle transition-colors hover:text-ink"
+        >
+          출장 화면으로
+        </a>
       </form>
     </main>
   );

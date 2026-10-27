@@ -648,8 +648,10 @@ export function TripReportDashboard() {
 
       <a
         href="/dev/requests"
-        aria-label="개발자 전용 페이지"
-        className="group fixed right-5 bottom-5 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-edge bg-surface text-ink-subtle shadow-[0_4px_16px_rgba(25,31,40,0.12)] transition-colors hover:bg-edge hover:text-ink"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="개발자 전용 페이지, 새 탭에서 열림"
+        className="group fixed right-8 bottom-8 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-edge bg-surface text-ink-subtle shadow-[0_4px_16px_rgba(25,31,40,0.12)] transition-colors hover:bg-edge hover:text-ink"
       >
         <span className="pointer-events-none absolute right-0 bottom-full mb-2.5 rounded-lg bg-ink px-2.5 py-1.5 text-[12px] font-semibold whitespace-nowrap text-white opacity-0 shadow-[0_8px_20px_rgba(25,31,40,0.16)] transition-opacity group-hover:opacity-100">
           개발자 전용 페이지
