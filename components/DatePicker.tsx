@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { formatDisplayDate } from "@/lib/format";
+import { formatDisplayDate, formatDisplayDateWithWeekday } from "@/lib/format";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
@@ -61,6 +61,7 @@ type DatePickerProps = {
   placeholder?: string;
   className?: string;
   align?: "left" | "right";
+  withWeekday?: boolean;
 };
 
 export function DatePicker({
@@ -71,6 +72,7 @@ export function DatePicker({
   placeholder = "날짜 선택",
   className = "",
   align = "left",
+  withWeekday = false,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const selectedDate = parseIsoDate(value);
@@ -137,7 +139,11 @@ export function DatePicker({
         className="flex w-full items-center justify-between gap-1.5 rounded-xl border border-edge bg-surface px-3 py-2.5 text-left text-[14px] text-ink outline-none transition hover:bg-surface focus:border-accent focus:bg-surface focus:ring-2 focus:ring-accent/15"
       >
         <span className={`min-w-0 truncate ${value ? "font-medium" : "text-ink-subtle"}`}>
-          {value ? formatDisplayDate(value) : placeholder}
+          {value
+            ? withWeekday
+              ? formatDisplayDateWithWeekday(value)
+              : formatDisplayDate(value)
+            : placeholder}
         </span>
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-secondary">
           <svg

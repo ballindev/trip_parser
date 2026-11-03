@@ -9,7 +9,11 @@ import {
   RowDeleteButton,
   RowEditButton,
 } from "@/components/RowActionIcons";
-import { formatDateRange, participationBadge } from "@/lib/format";
+import {
+  formatDateRange,
+  formatDateRangeWithWeekday,
+  participationBadge,
+} from "@/lib/format";
 import { listCardClassName } from "@/lib/list-card-styles";
 import {
   defaultTripFilterMonth,
@@ -314,22 +318,14 @@ export function TripListPanel({
                   type="button"
                   onClick={() => onSelectTrip(trip.id)}
                   onDoubleClick={() => handleOpenEdit(trip)}
-                  className="relative z-10 w-full p-4 text-left"
+                  className="relative z-10 w-full px-4 py-3 text-left"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 flex-1 text-[16px] font-bold leading-snug text-ink">
-                      {trip.name}
-                    </h3>
-                    <p className="shrink-0 whitespace-nowrap pt-0.5 text-right text-[12px] font-medium leading-snug text-ink-subtle transition-opacity group-hover:opacity-0">
-                      {formatDateRange(trip.startDate, trip.endDate)}
-                    </p>
-                  </div>
-                  <div className="mt-2 flex items-start justify-between gap-2">
-                    <p className="min-w-0 flex-1 line-clamp-2 text-[12px] leading-5 text-ink-secondary">
-                      {trip.summary}
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
+                    <p className="truncate text-[12px] font-semibold leading-4 text-ink-secondary">
+                      {formatDateRangeWithWeekday(trip.startDate, trip.endDate)}
                     </p>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-opacity group-hover:opacity-0 ${
+                      className={`inline-flex h-4 shrink-0 items-center rounded-full px-1.5 text-[10px] leading-none font-semibold whitespace-nowrap ${
                         selected
                           ? "bg-selected text-accent"
                           : "bg-surface text-ink-subtle"
@@ -340,15 +336,33 @@ export function TripListPanel({
                         trip.participants.length,
                       )}
                     </span>
+                    <h3
+                      className={`col-span-2 mt-2 truncate text-[16px] font-bold leading-5 text-ink ${
+                        trip.summary ? "" : "pr-12"
+                      }`}
+                      title={trip.name}
+                    >
+                      {trip.name}
+                    </h3>
+                    {trip.summary ? (
+                      <p
+                        className="col-span-2 mt-1 truncate pr-12 text-[12px] leading-4 text-ink-subtle"
+                        title={trip.summary}
+                      >
+                        {trip.summary}
+                      </p>
+                    ) : null}
                   </div>
                 </button>
-                <div className="pointer-events-none absolute top-1/2 right-3 z-10 flex -translate-y-1/2 items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+                <div className="pointer-events-none absolute right-3 bottom-3 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
                   <RowEditButton
                     label="출장 수정"
+                    size="compact"
                     onClick={() => handleOpenEdit(trip)}
                   />
                   <RowDeleteButton
                     label="출장 삭제"
+                    size="compact"
                     onClick={() => setDeleteTarget(trip)}
                   />
                 </div>

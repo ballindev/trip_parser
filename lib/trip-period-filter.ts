@@ -16,8 +16,8 @@ export function defaultTripFilterYear(now = new Date()): number {
   return year >= TRIP_FILTER_YEAR_START ? year : TRIP_FILTER_YEAR_START;
 }
 
-export function defaultTripFilterMonth(): TripPeriodValue {
-  return "all";
+export function defaultTripFilterMonth(now = new Date()): number {
+  return now.getMonth() + 1;
 }
 
 function isoDay(value: string): string {

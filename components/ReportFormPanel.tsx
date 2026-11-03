@@ -8,7 +8,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { rebuildDailyHours } from "@/lib/daily-hours";
 import { eligibleMeals, rebuildDailyMeals } from "@/lib/daily-meals";
-import { formatDateRange } from "@/lib/format";
+import { formatDateRangeWithWeekday } from "@/lib/format";
 import { isLocalRegion, normalizeRegion } from "@/lib/regions";
 import {
   clearLocalUnsupportedCosts,
@@ -411,7 +411,7 @@ export function ReportFormPanel({
                 {(form.startDate && form.endDate) ||
                 (tripStartDate && tripEndDate) ? (
                   <p className="shrink-0 text-[12px] font-medium text-ink-subtle">
-                    {formatDateRange(
+                    {formatDateRangeWithWeekday(
                       form.startDate || tripStartDate,
                       form.endDate || tripEndDate,
                     )}

@@ -40,18 +40,28 @@ export function TrashIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-const actionButtonClassName =
-  "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-accent";
+const actionButtonClassName = {
+  default:
+    "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-accent",
+  compact:
+    "flex h-5 w-5 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-surface hover:text-accent",
+};
 
-const deleteButtonClassName =
-  "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-danger";
+const deleteButtonClassName = {
+  default:
+    "flex h-9 w-9 items-center justify-center rounded-xl text-ink-subtle transition-colors hover:bg-surface hover:text-danger",
+  compact:
+    "flex h-5 w-5 items-center justify-center rounded-lg text-ink-subtle transition-colors hover:bg-surface hover:text-danger",
+};
 
 export function RowEditButton({
   label,
   onClick,
+  size = "default",
 }: {
   label: string;
   onClick: () => void;
+  size?: "default" | "compact";
 }) {
   return (
     <button
@@ -62,9 +72,9 @@ export function RowEditButton({
         onClick();
       }}
       onPointerDown={(e) => e.stopPropagation()}
-      className={actionButtonClassName}
+      className={actionButtonClassName[size]}
     >
-      <PencilIcon />
+      <PencilIcon size={18} />
     </button>
   );
 }
@@ -72,9 +82,11 @@ export function RowEditButton({
 export function RowDeleteButton({
   label,
   onClick,
+  size = "default",
 }: {
   label: string;
   onClick: () => void;
+  size?: "default" | "compact";
 }) {
   return (
     <button
@@ -85,9 +97,9 @@ export function RowDeleteButton({
         onClick();
       }}
       onPointerDown={(e) => e.stopPropagation()}
-      className={deleteButtonClassName}
+      className={deleteButtonClassName[size]}
     >
-      <TrashIcon />
+      <TrashIcon size={18} />
     </button>
   );
 }

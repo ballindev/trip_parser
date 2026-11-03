@@ -20,7 +20,8 @@ export function ScheduleSection({ form, onChange }: ScheduleSectionProps) {
           label="시작일"
           value={form.startDate}
           placeholder="시작일 선택"
-          className="w-[168px]"
+          withWeekday
+          className="w-[196px]"
           onChange={(nextDate) => {
             const endDate =
               form.endDate && form.endDate >= nextDate
@@ -48,7 +49,8 @@ export function ScheduleSection({ form, onChange }: ScheduleSectionProps) {
           value={form.endDate}
           min={form.startDate}
           placeholder="종료일 선택"
-          className="w-[168px]"
+          withWeekday
+          className="w-[196px]"
           onChange={(nextDate) => {
             const startDate = form.startDate || nextDate;
             const endDate =

@@ -12,7 +12,7 @@ import {
 } from "@/lib/attachment-text";
 import { formatTotalWorkHours } from "@/lib/daily-hours";
 import { formatMealSummary } from "@/lib/daily-meals";
-import { formatCurrency, formatDateRange } from "@/lib/format";
+import { formatCurrency, formatDateRangeWithWeekday } from "@/lib/format";
 import { isLocalRegion } from "@/lib/regions";
 import { getMissingRequiredLabels } from "@/lib/report-validation";
 import { sumCostLines } from "@/lib/transport-cost";
@@ -80,7 +80,7 @@ export function ReportInputSummary({
           label="일정"
           value={
             form.startDate && form.endDate
-              ? formatDateRange(form.startDate, form.endDate)
+              ? formatDateRangeWithWeekday(form.startDate, form.endDate)
               : "미입력"
           }
         />
