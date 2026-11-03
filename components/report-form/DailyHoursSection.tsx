@@ -8,7 +8,7 @@ import {
   showsWeekendMorningInfo,
   withUpdatedDayTimes,
 } from "@/lib/daily-hours";
-import { formatDisplayDate } from "@/lib/format";
+import { formatDisplayDateWithWeekday } from "@/lib/format";
 import type { MorningClaim, ReportForm } from "@/lib/types";
 import { FormSection } from "./FormSection";
 
@@ -60,7 +60,7 @@ export function DailyHoursSection({ form, onChange }: DailyHoursSectionProps) {
                 key={item.date}
                 className="space-y-2 rounded-2xl bg-surface-subtle p-3"
               >
-                <div className="grid items-start gap-3 sm:grid-cols-[112px_minmax(0,1fr)_minmax(0,1fr)_108px]">
+                <div className="grid items-start gap-3 sm:grid-cols-[148px_minmax(0,1fr)_minmax(0,1fr)_108px]">
                   <div>
                     <p className="mb-1.5 text-center text-[12px] font-semibold text-ink-subtle">
                       날짜
@@ -68,9 +68,9 @@ export function DailyHoursSection({ form, onChange }: DailyHoursSectionProps) {
                     <div
                       aria-readonly="true"
                       title="출장 일정에서 자동으로 채워진 날짜입니다"
-                      className="flex h-11 select-none items-center justify-center rounded-xl bg-surface-inset px-3 text-center text-[13px] font-semibold tabular-nums text-ink-subtle"
+                      className="flex h-11 select-none items-center justify-center rounded-xl bg-surface-inset px-2 text-center text-[13px] font-semibold whitespace-nowrap tabular-nums text-ink-subtle"
                     >
-                      {formatDisplayDate(item.date)}
+                      {formatDisplayDateWithWeekday(item.date)}
                     </div>
                   </div>
                   <TimePicker
