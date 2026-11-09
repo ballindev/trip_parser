@@ -9,7 +9,9 @@ import {
   RowDeleteButton,
   RowEditButton,
 } from "@/components/RowActionIcons";
+import { TripDayCount, tripDayCountLabel } from "@/components/TripDayCount";
 import {
+  countTripDays,
   formatDateRange,
   formatDateRangeWithWeekday,
   participationBadge,
@@ -291,6 +293,12 @@ export function TripListPanel({
               (p) => p.status === "완료",
             ).length;
             const selected = trip.id === selectedTripId;
+            const dateRange = formatDateRangeWithWeekday(
+              trip.startDate,
+              trip.endDate,
+            );
+            const tripDays = countTripDays(trip.startDate, trip.endDate);
+            const dayLabel = tripDayCountLabel(tripDays);
 
             return (
               <div
@@ -321,9 +329,13 @@ export function TripListPanel({
                   className="relative z-10 w-full px-4 py-3 text-left"
                 >
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2">
-                    <p className="truncate text-[12px] font-semibold leading-4 text-ink-secondary">
-                      {formatDateRangeWithWeekday(trip.startDate, trip.endDate)}
-                    </p>
+                      <p
+                        className="flex min-w-0 items-center gap-1 text-[12px] leading-4 font-semibold text-ink-secondary"
+                        title={dayLabel ? `${dateRange} · ${dayLabel}` : dateRange}
+                      >
+                        <span className="truncate">{dateRange}</span>
+                        <TripDayCount days={tripDays} />
+                      </p>
                     <span
                       className={`inline-flex h-4 shrink-0 items-center rounded-full px-1.5 text-[10px] leading-none font-semibold whitespace-nowrap ${
                         selected

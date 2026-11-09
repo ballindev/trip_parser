@@ -436,7 +436,7 @@ export function ReportFormPanel({
 
           <aside
             ref={summaryAsideRef}
-            className={`hidden w-[260px] shrink-0 self-start will-change-transform xl:block ${
+            className={`hidden w-[320px] shrink-0 self-start will-change-transform xl:block ${
               tripName ? "mt-[60px]" : ""
             }`}
           >

@@ -47,11 +47,11 @@ export function SummaryRow({
   value,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-3 py-2.5">
-      <span className="text-[13px] text-ink-subtle">{label}</span>
+      <span className="shrink-0 text-[13px] text-ink-subtle">{label}</span>
       <span className="text-right text-[13px] font-semibold text-ink">
         {value}
       </span>
