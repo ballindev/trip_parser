@@ -570,7 +570,7 @@ export function CostSections({
     <>
       <FormSection
         title="※ 사업추진비 사용여부"
-        description="근무시간에 포함되는 끼니만 선택할 수 있습니다. 선택한 끼니는 식비 지급에서 제외되고 붙임 자료에 사추비로 표기됩니다."
+        description="근무시간에 포함되는 식사만 선택할 수 있습니다. 선택한 식사는 식비 지급에서 제외되며, 붙임 자료에 사추비로 표기됩니다."
         disabled={localUnsupported}
         disabledMessage="관내(서울) 출장은 식비가 지원되지 않아 사업추진비를 입력하지 않습니다."
       >
@@ -590,7 +590,7 @@ export function CostSections({
             <li>석식: 근무 구간에 18:00 포함</li>
           </ul>
           <p className="mt-1.5">
-            위 기준에 해당하지 않는 끼니는 비활성화되며, 근무시간을 먼저 입력해야 선택할 수 있습니다.
+            위 기준에 해당하지 않는 식사는 비활성화되며, 근무시간을 먼저 입력해야 선택할 수 있습니다.
           </p>
         </details>
         {form.dailyMeals.length === 0 ? (
