@@ -96,6 +96,29 @@ export function formatDateRangeWithWeekday(
   return `${start} – ${formatDisplayDateWithWeekday(endDate)}`;
 }
 
+function localDate(isoDate: string): Date | null {
+  const [year, month, day] = isoDate.slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+/** 시작·종료를 양 끝 포함으로 센 일수. 하루짜리는 1입니다. */
+export function countTripDays(startDate: string, endDate: string): number | null {
+  const start = localDate(startDate);
+  const end = localDate(endDate || startDate);
+  if (!start || !end) return null;
+  const diff = Math.round((end.getTime() - start.getTime()) / 86_400_000);
+  return Math.abs(diff) + 1;
+}
+
 export function formatCurrency(value: number): string {
   return value.toLocaleString("ko-KR");
 }

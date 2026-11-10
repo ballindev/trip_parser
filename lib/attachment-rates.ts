@@ -25,9 +25,10 @@ export function mealPayByCount(count: number): number {
 }
 
 /**
- * 일비 (하루 단위, 근무 4시간 기준)
- * - 관외: 4시간 이상 25,000 / 미만 12,500
+ * 일비 (하루 단위)
+ * - 관외: 근무시간과 관계없이 25,000
  * - 관내(서울): 4시간 이상 20,000 / 미만 10,000
+ * 렌트 탑승 인원은 위 금액의 반액입니다.
  */
 export const DAILY_ALLOWANCE = {
   local: { full: 20_000, half: 10_000 },
@@ -64,6 +65,6 @@ export function dailyAllowanceForDay(input: {
 }): number {
   const local = isLocalRegion(input.region);
   const bracket = local ? DAILY_ALLOWANCE.local : DAILY_ALLOWANCE.remote;
-  const base = input.hours >= 4 ? bracket.full : bracket.half;
+  const base = !local || input.hours >= 4 ? bracket.full : bracket.half;
   return input.rentHalf ? Math.floor(base / 2) : base;
 }

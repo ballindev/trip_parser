@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { TripDayCount } from "@/components/TripDayCount";
 import {
   PersonNameLabel,
   isResignedPerson,
@@ -12,7 +13,11 @@ import {
 } from "@/lib/attachment-text";
 import { formatTotalWorkHours } from "@/lib/daily-hours";
 import { formatMealSummary } from "@/lib/daily-meals";
-import { formatCurrency, formatDateRangeWithWeekday } from "@/lib/format";
+import {
+  countTripDays,
+  formatCurrency,
+  formatDateRangeWithWeekday,
+} from "@/lib/format";
 import { isLocalRegion } from "@/lib/regions";
 import { getMissingRequiredLabels } from "@/lib/report-validation";
 import { sumCostLines } from "@/lib/transport-cost";
@@ -79,9 +84,18 @@ export function ReportInputSummary({
         <SummaryRow
           label="일정"
           value={
-            form.startDate && form.endDate
-              ? formatDateRangeWithWeekday(form.startDate, form.endDate)
-              : "미입력"
+            form.startDate && form.endDate ? (
+              <span className="inline-flex items-center justify-end gap-1 whitespace-nowrap">
+                <span>
+                  {formatDateRangeWithWeekday(form.startDate, form.endDate)}
+                </span>
+                <TripDayCount
+                  days={countTripDays(form.startDate, form.endDate)}
+                />
+              </span>
+            ) : (
+              "미입력"
+            )
           }
         />
         <SummaryRow
